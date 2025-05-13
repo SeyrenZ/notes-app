@@ -3,9 +3,35 @@
 import { useSession, signOut } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import Sidebar from "@/components/core/sidebar";
+import Navbar from "@/components/core/navbar";
+import NotesList from "@/components/core/note/notes-list";
+import CreateNewNote from "@/components/core/note/create-new-note";
+import { useState, useEffect } from "react";
+import { useNotesStore } from "@/store/notes-store";
+import NoteView from "@/components/core/note/note-view";
+import { useRouter } from "next/navigation";
+import NoteSidebar from "@/components/core/note/note-sidebar";
 
 export default function Home() {
   const { data: session, status } = useSession();
+  const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const { selectedNote } = useNotesStore();
+  const router = useRouter();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/login");
+    }
+  }, [status, router]);
+
+  // Close create note when a note is selected
+  useEffect(() => {
+    if (selectedNote) {
+      setIsCreatingNote(false);
+    }
+  }, [selectedNote]);
 
   if (status === "loading") {
     return (
@@ -18,28 +44,43 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Welcome to your Dashboard</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-medium">User Information</h3>
-              <p className="text-gray-600">Email: {session?.user?.email}</p>
-              <p className="text-gray-600">Name: {session?.user?.name}</p>
-            </div>
-            <Button
-              onClick={() => signOut({ callbackUrl: "/login" })}
-              variant="destructive"
-              className="w-full"
-            >
-              Sign Out
-            </Button>
+    <div className="min-h-screen flex">
+      <Sidebar />
+      <div className="flex-1 flex-col">
+        <Navbar />
+        <div className="flex-1">
+          <div className="w-full h-[calc(100dvh-81px)] bg-background flex">
+            <NotesList onCreateNote={() => setIsCreatingNote(true)} />
+            {isCreatingNote && (
+              <CreateNewNote onClose={() => setIsCreatingNote(false)} />
+            )}
+            {!isCreatingNote && selectedNote && (
+              <NoteView note={selectedNote} />
+            )}
+            {!isCreatingNote && !selectedNote && (
+              <div className="w-full flex items-center justify-center">
+                <div className="text-center max-w-md">
+                  <h3 className="text-xl font-semibold mb-2">
+                    Welcome to Notes App
+                  </h3>
+                  <p className="text-muted-foreground mb-4">
+                    Select a note from the sidebar or create a new one to get
+                    started.
+                  </p>
+                  <Button onClick={() => setIsCreatingNote(true)}>
+                    Create Your First Note
+                  </Button>
+                </div>
+              </div>
+            )}
+            {selectedNote ? (
+              <NoteSidebar note={selectedNote} />
+            ) : (
+              <div className="w-full max-w-[290px] border-l border-border px-4 py-5"></div>
+            )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
