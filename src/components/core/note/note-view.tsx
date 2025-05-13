@@ -274,7 +274,7 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
 
       <div className="w-full h-[1px] bg-border mt-1 mb-2" />
 
-      <div className="w-full h-full overflow-auto whitespace-pre-wrap">
+      <div className="w-full h-full overflow-auto whitespace-pre-wrap text-muted-foreground">
         {note.content || (
           <span className="text-muted-foreground italic">No content</span>
         )}

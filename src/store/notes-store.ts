@@ -2,6 +2,46 @@ import { create } from "zustand";
 import { Note, NoteCreate, NoteUpdate, TagCreate, Tag } from "@/types/note";
 import * as noteService from "@/services/note-service";
 
+// Helper functions for localStorage
+const LOCAL_STORAGE_KEY = "notes_app_cache";
+
+const saveToLocalStorage = (data: {
+  notes: Note[];
+  allNotes: Note[];
+  allTags: Tag[];
+  timestamp: number;
+}) => {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+    } catch (error) {
+      console.error("Error saving to localStorage:", error);
+    }
+  }
+};
+
+const loadFromLocalStorage = () => {
+  if (typeof window !== "undefined") {
+    try {
+      const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      if (cachedData) {
+        return JSON.parse(cachedData);
+      }
+    } catch (error) {
+      console.error("Error loading from localStorage:", error);
+    }
+  }
+  return null;
+};
+
+// Cache expiration time (24 hours in milliseconds)
+const CACHE_EXPIRATION = 24 * 60 * 60 * 1000;
+
+// Check if the cache is valid (not expired)
+const isCacheValid = (timestamp: number) => {
+  return Date.now() - timestamp < CACHE_EXPIRATION;
+};
+
 interface NotesState {
   notes: Note[];
   allNotes: Note[]; // Cache of all notes for filtering
@@ -63,6 +103,40 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   fetchNotes: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
+      // Try to load from cache first
+      const cachedData = loadFromLocalStorage();
+
+      // Check if we have valid cached data
+      if (cachedData && isCacheValid(cachedData.timestamp)) {
+        // Apply filters to cached data
+        const allNotes = cachedData.allNotes;
+
+        // Filter by archive status
+        const archiveFiltered = allNotes.filter(
+          (note: Note) => note.is_archived === get().showArchived
+        );
+
+        // Apply tag filter if one is selected
+        const filteredNotes = get().selectedTag
+          ? archiveFiltered.filter((note: Note) =>
+              note.tags?.some((tag: Tag) => tag.id === get().selectedTag?.id)
+            )
+          : archiveFiltered;
+
+        set({
+          notes: filteredNotes,
+          allNotes,
+          allTags: cachedData.allTags,
+          isLoading: false,
+        });
+
+        // Extract all unique tags from notes
+        get().extractAllTags();
+
+        return;
+      }
+
+      // If no valid cache, fetch from the server
       const notes = await noteService.getNotes(token, get().showArchived);
       set((state) => {
         // Store all notes for filtering
@@ -75,6 +149,14 @@ export const useNotesStore = create<NotesState>((set, get) => ({
             )
           : notes;
 
+        // Save to local storage
+        saveToLocalStorage({
+          notes: filteredNotes,
+          allNotes,
+          allTags: [], // Will be populated by extractAllTags
+          timestamp: Date.now(),
+        });
+
         return {
           notes: filteredNotes,
           allNotes,
@@ -84,6 +166,15 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
       // Extract all unique tags from notes
       get().extractAllTags();
+
+      // Update the cache with tags
+      const currentState = get();
+      saveToLocalStorage({
+        notes: currentState.notes,
+        allNotes: currentState.allNotes,
+        allTags: currentState.allTags,
+        timestamp: Date.now(),
+      });
     } catch (error) {
       console.error("Error fetching notes:", error);
       set({
@@ -111,16 +202,35 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           updatedNotes = [newNote, ...state.notes];
         }
 
-        return {
+        // Update the cache
+        const returnState = {
           notes: updatedNotes,
           allNotes,
           isLoading: false,
           selectedNote: newNote,
         };
+
+        saveToLocalStorage({
+          notes: updatedNotes,
+          allNotes,
+          allTags: state.allTags,
+          timestamp: Date.now(),
+        });
+
+        return returnState;
       });
 
       // Update tags list
       get().extractAllTags();
+
+      // Also update cache with the new tags
+      const currentState = get();
+      saveToLocalStorage({
+        notes: currentState.notes,
+        allNotes: currentState.allNotes,
+        allTags: currentState.allTags,
+        timestamp: Date.now(),
+      });
 
       return newNote;
     } catch (error) {
@@ -158,17 +268,36 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           updatedNotes = state.notes.filter((n) => n.id !== id);
         }
 
-        return {
+        // Update the cache
+        const returnState = {
           notes: updatedNotes,
           allNotes,
           isLoading: false,
           selectedNote:
             state.selectedNote?.id === id ? updatedNote : state.selectedNote,
         };
+
+        saveToLocalStorage({
+          notes: updatedNotes,
+          allNotes,
+          allTags: state.allTags,
+          timestamp: Date.now(),
+        });
+
+        return returnState;
       });
 
       // Update tags list
       get().extractAllTags();
+
+      // Also update cache with the new tags
+      const currentState = get();
+      saveToLocalStorage({
+        notes: currentState.notes,
+        allNotes: currentState.allNotes,
+        allTags: currentState.allTags,
+        timestamp: Date.now(),
+      });
 
       return updatedNote;
     } catch (error) {
@@ -185,15 +314,38 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       await noteService.deleteNote(id, token);
-      set((state) => ({
-        notes: state.notes.filter((n) => n.id !== id),
-        allNotes: state.allNotes.filter((n) => n.id !== id),
-        isLoading: false,
-        selectedNote: state.selectedNote?.id === id ? null : state.selectedNote,
-      }));
+      set((state) => {
+        const updatedNotes = state.notes.filter((n) => n.id !== id);
+        const updatedAllNotes = state.allNotes.filter((n) => n.id !== id);
+
+        // Update the cache
+        saveToLocalStorage({
+          notes: updatedNotes,
+          allNotes: updatedAllNotes,
+          allTags: state.allTags,
+          timestamp: Date.now(),
+        });
+
+        return {
+          notes: updatedNotes,
+          allNotes: updatedAllNotes,
+          isLoading: false,
+          selectedNote:
+            state.selectedNote?.id === id ? null : state.selectedNote,
+        };
+      });
 
       // Update tags list
       get().extractAllTags();
+
+      // Also update cache with the new tags
+      const currentState = get();
+      saveToLocalStorage({
+        notes: currentState.notes,
+        allNotes: currentState.allNotes,
+        allTags: currentState.allTags,
+        timestamp: Date.now(),
+      });
     } catch (error) {
       console.error("Error deleting note:", error);
       set({
@@ -323,6 +475,14 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           }
         }
 
+        // Update the localStorage cache
+        saveToLocalStorage({
+          notes: updatedNotes,
+          allNotes,
+          allTags: state.allTags,
+          timestamp: Date.now(),
+        });
+
         return {
           notes: updatedNotes,
           allNotes,
@@ -382,6 +542,14 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           }
         }
 
+        // Update the localStorage cache
+        saveToLocalStorage({
+          notes: updatedNotes,
+          allNotes,
+          allTags: state.allTags,
+          timestamp: Date.now(),
+        });
+
         return {
           notes: updatedNotes,
           allNotes,
@@ -416,6 +584,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         selectedTag: null,
       };
     });
+
+    // After updating the view mode, refilter the tags list to show only relevant tags
+    get().extractAllTags();
   },
 
   selectTag: (tag: Tag | null) => {
@@ -447,12 +618,17 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   extractAllTags: () => {
-    const { allNotes } = get();
+    const { allNotes, showArchived } = get();
 
-    // Collect all tags from all notes
+    // Collect all tags from notes in the current view (archived or non-archived)
     const tagsMap = new Map<number, Tag>();
 
-    allNotes.forEach((note) => {
+    // Only consider notes that match the current archive status
+    const relevantNotes = allNotes.filter(
+      (note) => note.is_archived === showArchived
+    );
+
+    relevantNotes.forEach((note) => {
       note.tags?.forEach((tag) => {
         if (!tagsMap.has(tag.id)) {
           tagsMap.set(tag.id, tag);

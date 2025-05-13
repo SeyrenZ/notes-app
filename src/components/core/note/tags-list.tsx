@@ -29,7 +29,7 @@ const TagItem: React.FC<TagItemProps> = ({ tag, isSelected, onClick }) => {
 };
 
 const TagsList = () => {
-  const { allTags, selectedTag, selectTag } = useNotesStore();
+  const { allTags, selectedTag, selectTag, showArchived } = useNotesStore();
 
   const handleTagClick = (tag: Tag) => {
     if (selectedTag?.id === tag.id) {
@@ -42,13 +42,25 @@ const TagsList = () => {
   };
 
   if (allTags.length === 0) {
-    return null;
+    return (
+      <div className="flex flex-col gap-1">
+        <div className="text-sm font-medium text-muted-foreground px-3 mb-1">
+          Tags
+        </div>
+        <div className="px-3 py-2 text-sm text-muted-foreground">
+          {showArchived
+            ? "No tags found in archived notes."
+            : "No tags found in your notes."}
+        </div>
+      </div>
+    );
   }
 
   return (
     <div className="flex flex-col gap-1">
       <div className="text-sm font-medium text-muted-foreground px-3 mb-1">
-        Tags
+        {showArchived ? "Tags in Archived Notes" : "Tags"}
+        <span className="ml-1 text-xs">({allTags.length})</span>
       </div>
       {allTags.map((tag) => (
         <TagItem

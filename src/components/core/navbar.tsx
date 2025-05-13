@@ -2,10 +2,16 @@ import React from "react";
 import { Input } from "../ui/input";
 import { SearchIcon, SettingsIcon } from "lucide-react";
 import { Button } from "../ui/button";
+import { useNotesStore } from "@/store/notes-store";
+
 const Navbar = () => {
+  const { showArchived } = useNotesStore();
+
   return (
     <div className="w-full h-[81px] bg-background px-8 flex items-center justify-between border-b border-border">
-      <div className="text-2xl font-bold">All Notes</div>
+      <div className="text-2xl font-bold">
+        {showArchived ? "Archived Notes" : "All Notes"}
+      </div>
       <div className="flex items-center gap-4">
         <div className="relative">
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />

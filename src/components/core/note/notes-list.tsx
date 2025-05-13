@@ -63,6 +63,7 @@ const NotesList: React.FC<NotesListProps> = ({
       try {
         setIsLoadingLocal(true);
         if (session.accessToken) {
+          // fetchNotes will first check localStorage cache before making API request
           await fetchNotes(session.accessToken);
         }
       } catch (error) {
@@ -101,7 +102,14 @@ const NotesList: React.FC<NotesListProps> = ({
   // Memoize the note cards to prevent unnecessary re-renders
   const noteCards = useMemo(() => {
     if (!isLoadingNotes && !error && notes.length > 0) {
-      return notes.map((note) => (
+      // Sort notes by updated_at date in descending order (newest first)
+      const sortedNotes = [...notes].sort((a, b) => {
+        return (
+          new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
+        );
+      });
+
+      return sortedNotes.map((note) => (
         <NoteCard
           key={note.id}
           note={note}
@@ -121,7 +129,7 @@ const NotesList: React.FC<NotesListProps> = ({
           disabled={isLoadingNotes || isCreatingNote}
         >
           <PlusIcon className="w-4 h-4" />
-          <div>{isLoadingNotes ? "Loading..." : "Create New Note"}</div>
+          <div>Create New Note</div>
         </Button>
 
         {showArchived && (
@@ -157,8 +165,13 @@ const NotesList: React.FC<NotesListProps> = ({
       )}
 
       {isLoadingNotes && (
-        <div className="flex items-center justify-center h-20 mt-4">
-          <div className="text-sm text-muted-foreground">Loading notes...</div>
+        <div className="px-4 space-y-3 mt-4">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-center h-[120px] w-full bg-accent rounded-md animate-pulse"
+            ></div>
+          ))}
         </div>
       )}
 
