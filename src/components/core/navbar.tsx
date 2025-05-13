@@ -1,11 +1,51 @@
-import React from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "../ui/input";
-import { SearchIcon, SettingsIcon } from "lucide-react";
+import { SearchIcon, SettingsIcon, XCircleIcon } from "lucide-react";
 import { Button } from "../ui/button";
 import { useNotesStore } from "@/store/notes-store";
 
 const Navbar = () => {
-  const { showArchived } = useNotesStore();
+  const { showArchived, searchQuery, setSearchQuery, notes } = useNotesStore();
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync local state with store only on initial render and when explicitly cleared
+  useEffect(() => {
+    if (!searchQuery) {
+      setLocalSearchQuery("");
+    }
+  }, [searchQuery]);
+
+  // Handle input change with debounce
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const query = e.target.value;
+    setLocalSearchQuery(query);
+
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set new timeout
+    timeoutRef.current = setTimeout(() => {
+      setSearchQuery(query);
+    }, 300);
+  };
+
+  // Clear timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
+  // Clear search
+  const handleClearSearch = () => {
+    setLocalSearchQuery("");
+    setSearchQuery("");
+  };
 
   return (
     <div className="w-full h-[81px] bg-background px-8 flex items-center justify-between border-b border-border">
@@ -17,8 +57,18 @@ const Navbar = () => {
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
           <Input
             placeholder="Search by title, content, or tags..."
-            className="w-[300px] h-[44px] rounded-md pl-10"
+            className="w-[300px] h-[44px] rounded-md pl-10 pr-10"
+            value={localSearchQuery}
+            onChange={handleSearchChange}
           />
+          {localSearchQuery && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <XCircleIcon className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <Button
           variant="ghost"

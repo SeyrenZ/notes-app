@@ -52,6 +52,7 @@ interface NotesState {
   showArchived: boolean;
   selectedTag: Tag | null;
   allTags: Tag[]; // Unique tags from all notes
+  searchQuery: string; // Search query for filtering notes
   editedNoteContent: {
     title?: string;
     content?: string;
@@ -86,6 +87,8 @@ interface NotesState {
   setShowArchived: (showArchived: boolean) => void;
   selectTag: (tag: Tag | null) => void;
   extractAllTags: () => void;
+  setSearchQuery: (query: string) => void; // Set search query
+  applyFilters: () => void; // Apply all filters (archive, tag, search)
 }
 
 export const useNotesStore = create<NotesState>((set, get) => ({
@@ -98,7 +101,50 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   showArchived: false,
   selectedTag: null,
   allTags: [],
+  searchQuery: "",
   editedNoteContent: null,
+
+  // Apply all filters to notes (archive, tag, search)
+  applyFilters: () => {
+    const { allNotes, showArchived, selectedTag, searchQuery } = get();
+
+    // First filter by archive status
+    let filteredNotes = allNotes.filter(
+      (note) => note.is_archived === showArchived
+    );
+
+    // Then filter by tag if one is selected
+    if (selectedTag) {
+      filteredNotes = filteredNotes.filter((note) =>
+        note.tags?.some((tag) => tag.id === selectedTag.id)
+      );
+    }
+
+    // Finally filter by search query if one exists
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filteredNotes = filteredNotes.filter((note) => {
+        // Search in title
+        const titleMatch = note.title?.toLowerCase().includes(query);
+        // Search in content
+        const contentMatch = note.content?.toLowerCase().includes(query);
+        // Search in tags
+        const tagMatch = note.tags?.some((tag) =>
+          tag.name.toLowerCase().includes(query)
+        );
+
+        return titleMatch || contentMatch || tagMatch;
+      });
+    }
+
+    set({ notes: filteredNotes });
+  },
+
+  // Set search query and apply filters
+  setSearchQuery: (query: string) => {
+    set({ searchQuery: query });
+    get().applyFilters();
+  },
 
   fetchNotes: async (token: string) => {
     set({ isLoading: true, error: null });
@@ -111,20 +157,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         // Apply filters to cached data
         const allNotes = cachedData.allNotes;
 
-        // Filter by archive status
-        const archiveFiltered = allNotes.filter(
-          (note: Note) => note.is_archived === get().showArchived
-        );
-
-        // Apply tag filter if one is selected
-        const filteredNotes = get().selectedTag
-          ? archiveFiltered.filter((note: Note) =>
-              note.tags?.some((tag: Tag) => tag.id === get().selectedTag?.id)
-            )
-          : archiveFiltered;
-
         set({
-          notes: filteredNotes,
           allNotes,
           allTags: cachedData.allTags,
           isLoading: false,
@@ -132,6 +165,8 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
         // Extract all unique tags from notes
         get().extractAllTags();
+        // Apply filters to get the filtered notes
+        get().applyFilters();
 
         return;
       }
@@ -142,23 +177,15 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         // Store all notes for filtering
         const allNotes = [...notes];
 
-        // Apply tag filter if one is selected
-        const filteredNotes = state.selectedTag
-          ? notes.filter((note) =>
-              note.tags?.some((tag) => tag.id === state.selectedTag?.id)
-            )
-          : notes;
-
         // Save to local storage
         saveToLocalStorage({
-          notes: filteredNotes,
+          notes: [], // Will be populated by applyFilters
           allNotes,
           allTags: [], // Will be populated by extractAllTags
           timestamp: Date.now(),
         });
 
         return {
-          notes: filteredNotes,
           allNotes,
           isLoading: false,
         };
@@ -166,6 +193,8 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
       // Extract all unique tags from notes
       get().extractAllTags();
+      // Apply filters to get the filtered notes
+      get().applyFilters();
 
       // Update the cache with tags
       const currentState = get();
@@ -576,45 +605,21 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   setShowArchived: (showArchived: boolean) => {
-    set((state) => {
-      // If changing view mode, deselect any selected note and tag
-      return {
-        showArchived,
-        selectedNote: null,
-        selectedTag: null,
-      };
+    set({
+      showArchived,
+      selectedNote: null,
+      selectedTag: null,
     });
 
     // After updating the view mode, refilter the tags list to show only relevant tags
     get().extractAllTags();
+    // Apply filters to update the notes list
+    get().applyFilters();
   },
 
   selectTag: (tag: Tag | null) => {
-    const { showArchived, allNotes } = get();
-
-    set((state) => {
-      if (!tag) {
-        // If tag is null, show all notes based on archive status
-        return {
-          selectedTag: null,
-          notes: allNotes.filter((note) => note.is_archived === showArchived),
-          selectedNote: null,
-        };
-      }
-
-      // Filter notes by tag and archive status
-      const filteredNotes = allNotes.filter(
-        (note) =>
-          note.is_archived === showArchived &&
-          note.tags?.some((noteTag) => noteTag.id === tag.id)
-      );
-
-      return {
-        selectedTag: tag,
-        notes: filteredNotes,
-        selectedNote: null,
-      };
-    });
+    set({ selectedTag: tag, selectedNote: null });
+    get().applyFilters();
   },
 
   extractAllTags: () => {
