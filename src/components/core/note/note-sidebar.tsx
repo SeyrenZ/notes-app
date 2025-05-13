@@ -11,6 +11,8 @@ import { useNotesStore } from "@/store/notes-store";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import DeleteDialog from "./dialog/delete-dialog";
+import ArchiveDialog from "./dialog/archive-dialog";
 
 interface NoteSidebarProps {
   note: Note;
@@ -30,6 +32,8 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
 
   const [isDeleting, setIsDeleting] = useState(false);
   const [isArchiving, setIsArchiving] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showArchiveDialog, setShowArchiveDialog] = useState(false);
 
   const formattedDate = formatDistanceToNow(new Date(note.updated_at), {
     addSuffix: true,
@@ -46,6 +50,7 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
       await deleteNote(note.id, session.accessToken);
       selectNote(null);
       toast.success("Note deleted successfully");
+      setShowDeleteDialog(false);
     } catch (error) {
       console.error("Failed to delete note:", error);
       toast.error("Failed to delete note. Please try again.");
@@ -74,6 +79,7 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
         await archiveNote(note.id, session.accessToken);
         toast.success("Note archived successfully");
       }
+      setShowArchiveDialog(false);
     } catch (error) {
       console.error("Failed to archive/unarchive note:", error);
       toast.error("Failed to change archive status. Please try again.");
@@ -99,7 +105,7 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
         <Button
           variant="outline"
           className="flex items-center gap-2 justify-start h-10"
-          onClick={handleArchiveToggle}
+          onClick={() => setShowArchiveDialog(true)}
           disabled={isArchiving || isEditing}
         >
           {note.is_archived ? (
@@ -117,8 +123,8 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
 
         <Button
           variant="outline"
-          className="flex items-center gap-2 justify-start h-10 border-destructive text-destructive hover:bg-destructive/10"
-          onClick={handleDelete}
+          className="flex items-center gap-2 justify-start h-10 border-destructive text-destructive hover:bg-destructive hover:text-background"
+          onClick={() => setShowDeleteDialog(true)}
           disabled={isDeleting || isEditing}
         >
           <Trash2Icon className="w-4 h-4" />
@@ -136,7 +142,7 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
             })}
           </div>
           <div>Last Updated: {formattedDate}</div>
-          <div>Status: {note.is_archived ? "Archived" : "Active"}</div>
+          <div>Status: {note.is_archived ? "Archived" : "Not Archived"}</div>
         </div>
       </div>
 
@@ -155,6 +161,23 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <DeleteDialog
+        isOpen={showDeleteDialog}
+        isDeleting={isDeleting}
+        onClose={() => setShowDeleteDialog(false)}
+        onConfirm={handleDelete}
+      />
+
+      {/* Archive Confirmation Dialog */}
+      <ArchiveDialog
+        isOpen={showArchiveDialog}
+        isArchiving={isArchiving}
+        isArchived={note.is_archived}
+        onClose={() => setShowArchiveDialog(false)}
+        onConfirm={handleArchiveToggle}
+      />
     </div>
   );
 };
