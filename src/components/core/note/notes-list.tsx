@@ -90,11 +90,7 @@ const NotesList: React.FC<NotesListProps> = ({
   // Memoize the draft note card to prevent unnecessary re-renders
   const draftNoteCard = useMemo(() => {
     if (isCreatingNote && draftNote) {
-      return (
-        <div className="px-2">
-          <DraftNoteCard note={draftNote} onClick={onCreateNote} />
-        </div>
-      );
+      return <DraftNoteCard note={draftNote} onClick={onCreateNote} />;
     }
     return null;
   }, [isCreatingNote, draftNote, onCreateNote]);
@@ -161,17 +157,6 @@ const NotesList: React.FC<NotesListProps> = ({
       {error && (
         <div className="text-sm text-destructive text-center px-4 mt-4">
           {error}
-        </div>
-      )}
-
-      {isLoadingNotes && (
-        <div className="px-4 space-y-3 mt-4">
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-center h-[120px] w-full bg-accent rounded-md animate-pulse"
-            ></div>
-          ))}
         </div>
       )}
 

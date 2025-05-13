@@ -16,7 +16,7 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({
   onDraftChange,
 }) => {
   const { data: session } = useSession();
-  const { createNote, createAndProcessTags } = useNotesStore();
+  const { createNote, createAndProcessTags, showArchived } = useNotesStore();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
@@ -45,8 +45,9 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({
       content: content,
       tags: tagsList.length > 0 ? tagsList : undefined,
       updated_at: new Date().toISOString(),
+      is_archived: showArchived,
     };
-  }, [title, content, tags]);
+  }, [title, content, tags, showArchived]);
 
   // Update draft note immediately for title changes
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,12 +130,12 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({
 
     try {
       setIsSaving(true);
-      // Create the note first
+      // Create the note first, setting archive status based on current view
       const newNote = await createNote(
         {
           title: title.trim(),
           content: content.trim(),
-          is_archived: false,
+          is_archived: showArchived, // Use current view to determine archive status
         },
         session.accessToken
       );
@@ -144,7 +145,9 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({
         await createAndProcessTags(newNote.id, tags, session.accessToken);
       }
 
-      toast.success("Note created successfully");
+      toast.success(
+        `Note ${showArchived ? "archived" : "created"} successfully`
+      );
       onClose();
     } catch (error) {
       console.error("Failed to save note:", error);
@@ -184,6 +187,13 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({
           </div>
           <div className="text-sm text-muted-foreground">Not yet saved</div>
         </div>
+        {showArchived && (
+          <div className="w-full">
+            <div className="text-sm py-1 px-3 bg-accent inline-block rounded-md text-muted-foreground">
+              This note will be created as archived
+            </div>
+          </div>
+        )}
       </div>
       <div className="w-full h-[1px] bg-border" />
       <textarea
@@ -194,7 +204,11 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({
       />
       <div className="w-full pt-4 border-t border-border flex items-center gap-2">
         <Button onClick={handleSaveNote} disabled={isSaving}>
-          {isSaving ? "Saving..." : "Save Note"}
+          {isSaving
+            ? "Saving..."
+            : showArchived
+            ? "Save as Archived"
+            : "Save Note"}
         </Button>
         <Button
           variant="secondary"
