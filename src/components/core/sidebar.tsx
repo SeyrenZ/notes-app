@@ -12,6 +12,7 @@ interface MenuButtonProps {
   label: string;
   onClick: () => void;
   isActive?: boolean;
+  count?: number;
 }
 
 const MenuButton: React.FC<MenuButtonProps> = ({
@@ -19,6 +20,7 @@ const MenuButton: React.FC<MenuButtonProps> = ({
   label,
   onClick,
   isActive = false,
+  count,
 }) => {
   return (
     <Button
@@ -33,7 +35,12 @@ const MenuButton: React.FC<MenuButtonProps> = ({
     >
       <div className="flex items-center gap-2">
         <div className={cn(isActive && "text-primary")}>{icon}</div>
-        {label}
+        <div className="flex-1">{label}</div>
+        {count !== undefined && (
+          <span className="text-xs py-0.5 rounded-full min-w-[20px] flex items-center justify-center">
+            ( {count} )
+          </span>
+        )}
       </div>
       <ChevronRight
         className={cn(
@@ -46,13 +53,18 @@ const MenuButton: React.FC<MenuButtonProps> = ({
 };
 
 const Sidebar = () => {
-  const { showArchived, setShowArchived, selectedTag } = useNotesStore();
+  const { showArchived, setShowArchived, selectedTag, allNotes } =
+    useNotesStore();
 
   const handleToggleView = (archived: boolean) => {
     if (showArchived !== archived) {
       setShowArchived(archived);
     }
   };
+
+  // Count regular and archived notes
+  const activeNotesCount = allNotes.filter((note) => !note.is_archived).length;
+  const archivedNotesCount = allNotes.filter((note) => note.is_archived).length;
 
   return (
     <div className="w-[clamp(240px,20%,272px)] bg-background min-h-[100dvh] border-r border-border px-3 py-4">
@@ -68,12 +80,14 @@ const Sidebar = () => {
             label="All Notes"
             onClick={() => handleToggleView(false)}
             isActive={!showArchived && !selectedTag}
+            count={activeNotesCount}
           />
           <MenuButton
             icon={<ArchiveIcon className="w-4 h-4 group-hover:text-primary" />}
             label="Archived Notes"
             onClick={() => handleToggleView(true)}
             isActive={showArchived && !selectedTag}
+            count={archivedNotesCount}
           />
         </div>
         <div className="w-full h-[1px] bg-border my-1" />
