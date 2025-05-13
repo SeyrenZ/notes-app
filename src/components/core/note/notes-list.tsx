@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { Button } from "../../ui/button";
 import { PlusIcon, TagIcon, X } from "lucide-react";
 import NoteCard from "./note-card";
+import DraftNoteCard from "./draft-note-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useNotesStore } from "@/store/notes-store";
 import { useSession } from "next-auth/react";
@@ -11,6 +12,8 @@ import { isValidSession } from "@/lib/auth-utils";
 
 interface NotesListProps {
   onCreateNote: () => void;
+  draftNote?: Partial<Note>;
+  isCreatingNote: boolean;
 }
 
 const EmptyNoteList = ({
@@ -33,7 +36,11 @@ const EmptyNoteList = ({
   );
 };
 
-const NotesList: React.FC<NotesListProps> = ({ onCreateNote }) => {
+const NotesList: React.FC<NotesListProps> = ({
+  onCreateNote,
+  draftNote,
+  isCreatingNote,
+}) => {
   const { data: session } = useSession();
   const [isLoadingLocal, setIsLoadingLocal] = useState(false);
   const {
@@ -79,13 +86,39 @@ const NotesList: React.FC<NotesListProps> = ({ onCreateNote }) => {
 
   const isLoadingNotes = isLoading || isLoadingLocal;
 
+  // Memoize the draft note card to prevent unnecessary re-renders
+  const draftNoteCard = useMemo(() => {
+    if (isCreatingNote && draftNote) {
+      return (
+        <div className="px-2">
+          <DraftNoteCard note={draftNote} onClick={onCreateNote} />
+        </div>
+      );
+    }
+    return null;
+  }, [isCreatingNote, draftNote, onCreateNote]);
+
+  // Memoize the note cards to prevent unnecessary re-renders
+  const noteCards = useMemo(() => {
+    if (!isLoadingNotes && !error && notes.length > 0) {
+      return notes.map((note) => (
+        <NoteCard
+          key={note.id}
+          note={note}
+          onClick={() => handleNoteClick(note)}
+        />
+      ));
+    }
+    return null;
+  }, [notes, isLoadingNotes, error, handleNoteClick]);
+
   return (
     <div className="w-full max-w-[290px] py-5 h-full border-r border-border flex flex-col">
       <div className="px-4">
         <Button
           className="w-full items-center gap-2 h-[41px]"
           onClick={onCreateNote}
-          disabled={isLoadingNotes}
+          disabled={isLoadingNotes || isCreatingNote}
         >
           <PlusIcon className="w-4 h-4" />
           <div>{isLoadingNotes ? "Loading..." : "Create New Note"}</div>
@@ -129,7 +162,7 @@ const NotesList: React.FC<NotesListProps> = ({ onCreateNote }) => {
         </div>
       )}
 
-      {!isLoadingNotes && !error && notes.length === 0 && (
+      {!isLoadingNotes && !error && notes.length === 0 && !isCreatingNote && (
         <div className="px-4 mt-4">
           <EmptyNoteList
             isArchived={showArchived}
@@ -138,17 +171,10 @@ const NotesList: React.FC<NotesListProps> = ({ onCreateNote }) => {
         </div>
       )}
 
-      {!isLoadingNotes && !error && notes.length > 0 && (
-        <ScrollArea className="flex flex-col overflow-hidden px-2">
-          {notes.map((note) => (
-            <NoteCard
-              key={note.id}
-              note={note}
-              onClick={() => handleNoteClick(note)}
-            />
-          ))}
-        </ScrollArea>
-      )}
+      <ScrollArea className="flex-1 px-2 mt-2">
+        {draftNoteCard}
+        {noteCards}
+      </ScrollArea>
     </div>
   );
 };

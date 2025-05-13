@@ -1,21 +1,120 @@
 import { TagIcon, ClockIcon, X } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "../../ui/button";
 import { useSession } from "next-auth/react";
 import { useNotesStore } from "@/store/notes-store";
 import { toast } from "sonner";
+import { Note, Tag } from "@/types/note";
 
 interface CreateNewNoteProps {
   onClose: () => void;
+  onDraftChange: (draftNote: Partial<Note>) => void;
 }
 
-const CreateNewNote: React.FC<CreateNewNoteProps> = ({ onClose }) => {
+const CreateNewNote: React.FC<CreateNewNoteProps> = ({
+  onClose,
+  onDraftChange,
+}) => {
   const { data: session } = useSession();
   const { createNote, createAndProcessTags } = useNotesStore();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [tags, setTags] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+
+  // Use debounce to prevent too many updates
+  const debouncedUpdateRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Create a function to prepare the draft note data
+  const prepareDraftNote = useCallback(() => {
+    const tagsList = tags
+      .split(",")
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0)
+      .map(
+        (name, index) =>
+          ({
+            id: -index - 1,
+            name,
+            created_at: new Date().toISOString(),
+          } as Tag)
+      );
+
+    return {
+      title: title || "Untitled Note",
+      content: content,
+      tags: tagsList.length > 0 ? tagsList : undefined,
+      updated_at: new Date().toISOString(),
+    };
+  }, [title, content, tags]);
+
+  // Update draft note immediately for title changes
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setTitle(newTitle);
+
+    // Update draft immediately for title changes
+    const draftNote = prepareDraftNote();
+    draftNote.title = newTitle || "Untitled Note";
+    onDraftChange(draftNote);
+  };
+
+  // Update content with debouncing
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    setContent(newContent);
+
+    // Content changes will be handled by the useEffect debounce
+  };
+
+  // Update tags with immediate response for small changes
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTags = e.target.value;
+    setTags(newTags);
+
+    // Update immediately for small tag changes (like commas)
+    if (Math.abs(newTags.length - tags.length) <= 1) {
+      const draftNote = prepareDraftNote();
+      draftNote.tags = newTags
+        .split(",")
+        .map((tag) => tag.trim())
+        .filter((tag) => tag.length > 0)
+        .map(
+          (name, index) =>
+            ({
+              id: -index - 1,
+              name,
+              created_at: new Date().toISOString(),
+            } as Tag)
+        );
+
+      if (draftNote.tags.length === 0) {
+        draftNote.tags = undefined;
+      }
+
+      onDraftChange(draftNote);
+    }
+  };
+
+  // Update draft note with debouncing to prevent infinite loops
+  useEffect(() => {
+    // Clear any existing timeout
+    if (debouncedUpdateRef.current) {
+      clearTimeout(debouncedUpdateRef.current);
+    }
+
+    // Set a new timeout to update the draft note
+    debouncedUpdateRef.current = setTimeout(() => {
+      onDraftChange(prepareDraftNote());
+    }, 100); // Reduced to 100ms for more responsiveness
+
+    // Cleanup function
+    return () => {
+      if (debouncedUpdateRef.current) {
+        clearTimeout(debouncedUpdateRef.current);
+      }
+    };
+  }, [title, content, tags, onDraftChange, prepareDraftNote]);
 
   const handleSaveNote = async () => {
     if (!session?.accessToken) {
@@ -62,7 +161,7 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({ onClose }) => {
         placeholder="Enter a title..."
         className="text-2xl font-bold placeholder:text-foreground focus:outline-none"
         value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        onChange={handleTitleChange}
       />
       <div className="w-full flex flex-col gap-2">
         <div className="w-full flex items-center gap-2">
@@ -75,7 +174,7 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({ onClose }) => {
             placeholder="Add tags separated by commas (e.g. Work, Planning)"
             className="text-sm w-full px-2 py-0.5 focus:outline-border rounded-md"
             value={tags}
-            onChange={(e) => setTags(e.target.value)}
+            onChange={handleTagsChange}
           />
         </div>
         <div className="w-full flex items-center gap-2">
@@ -91,7 +190,7 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({ onClose }) => {
         placeholder="Start typing your note here..."
         className="w-full h-full focus:outline-none text-sm placeholder:text-foreground/70"
         value={content}
-        onChange={(e) => setContent(e.target.value)}
+        onChange={handleContentChange}
       />
       <div className="w-full pt-4 border-t border-border flex items-center gap-2">
         <Button onClick={handleSaveNote} disabled={isSaving}>

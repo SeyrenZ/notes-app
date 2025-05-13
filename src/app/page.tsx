@@ -14,10 +14,14 @@ import { useRouter } from "next/navigation";
 import NoteSidebar from "@/components/core/note/note-sidebar";
 import { isValidSession } from "@/lib/auth-utils";
 import { Loader2 } from "lucide-react";
+import { Note } from "@/types/note";
 
 export default function Home() {
   const { data: session, status } = useSession();
   const [isCreatingNote, setIsCreatingNote] = useState(false);
+  const [draftNote, setDraftNote] = useState<Partial<Note> | undefined>(
+    undefined
+  );
   const { selectedNote, showArchived, fetchNotes } = useNotesStore();
   const router = useRouter();
   const [isTokenChecked, setIsTokenChecked] = useState(false);
@@ -45,6 +49,7 @@ export default function Home() {
   useEffect(() => {
     if (selectedNote) {
       setIsCreatingNote(false);
+      setDraftNote(undefined);
     }
   }, [selectedNote]);
 
@@ -59,6 +64,27 @@ export default function Home() {
       });
     }
   }, [session, fetchNotes, showArchived, isTokenChecked]);
+
+  const handleCreateNoteClick = () => {
+    setIsCreatingNote(true);
+    if (!draftNote) {
+      setDraftNote({
+        title: "Untitled Note",
+        content: "",
+        updated_at: new Date().toISOString(),
+      });
+    }
+  };
+
+  const handleDraftChange = (updatedDraft: Partial<Note>) => {
+    // Use functional update to avoid potential stale state references
+    setDraftNote(updatedDraft);
+  };
+
+  const handleCloseCreateNote = () => {
+    setIsCreatingNote(false);
+    setDraftNote(undefined);
+  };
 
   if (status === "loading" || !isTokenChecked) {
     return (
@@ -82,9 +108,16 @@ export default function Home() {
         <Navbar />
         <div className="flex-1">
           <div className="w-full h-[calc(100dvh-81px)] bg-background flex">
-            <NotesList onCreateNote={() => setIsCreatingNote(true)} />
+            <NotesList
+              onCreateNote={handleCreateNoteClick}
+              draftNote={draftNote}
+              isCreatingNote={isCreatingNote}
+            />
             {isCreatingNote && (
-              <CreateNewNote onClose={() => setIsCreatingNote(false)} />
+              <CreateNewNote
+                onClose={handleCloseCreateNote}
+                onDraftChange={handleDraftChange}
+              />
             )}
             {!isCreatingNote && selectedNote && (
               <NoteView note={selectedNote} />

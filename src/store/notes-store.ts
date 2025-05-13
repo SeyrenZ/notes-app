@@ -12,6 +12,11 @@ interface NotesState {
   showArchived: boolean;
   selectedTag: Tag | null;
   allTags: Tag[]; // Unique tags from all notes
+  editedNoteContent: {
+    title?: string;
+    content?: string;
+    tags?: string;
+  } | null;
 
   // Actions
   fetchNotes: (token: string) => Promise<void>;
@@ -30,6 +35,12 @@ interface NotesState {
     token: string
   ) => Promise<Note>;
   setIsEditing: (isEditing: boolean) => void;
+  updateEditedContent: (content: {
+    title?: string;
+    content?: string;
+    tags?: string;
+  }) => void;
+  clearEditedContent: () => void;
   archiveNote: (id: number, token: string) => Promise<Note>;
   unarchiveNote: (id: number, token: string) => Promise<Note>;
   setShowArchived: (showArchived: boolean) => void;
@@ -47,6 +58,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   showArchived: false,
   selectedTag: null,
   allTags: [],
+  editedNoteContent: null,
 
   fetchNotes: async (token: string) => {
     set({ isLoading: true, error: null });
@@ -263,6 +275,18 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   setIsEditing: (isEditing: boolean) => {
     set({ isEditing });
+  },
+
+  updateEditedContent: (content: {
+    title?: string;
+    content?: string;
+    tags?: string;
+  }) => {
+    set({ editedNoteContent: content });
+  },
+
+  clearEditedContent: () => {
+    set({ editedNoteContent: null });
   },
 
   archiveNote: async (id: number, token: string) => {

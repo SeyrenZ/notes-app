@@ -29,6 +29,9 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
     createAndProcessTags,
     isEditing,
     setIsEditing,
+    updateEditedContent,
+    clearEditedContent,
+    editedNoteContent,
   } = useNotesStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -44,6 +47,13 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
     setEditedContent(note.content);
     setEditedTags(note.tags ? note.tags.map((tag) => tag.name).join(", ") : "");
   }, [note]);
+
+  // When editing mode is turned off, clear the edited content
+  useEffect(() => {
+    if (!isEditing) {
+      clearEditedContent();
+    }
+  }, [isEditing, clearEditedContent]);
 
   const formattedDate = formatDistanceToNow(new Date(note.updated_at), {
     addSuffix: true,
@@ -70,10 +80,51 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
 
   const handleEdit = () => {
     setIsEditing(true);
+    // Initialize edited content in the store
+    updateEditedContent({
+      title: editedTitle,
+      content: editedContent,
+      tags: editedTags,
+    });
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+    clearEditedContent();
+    // Reset to original values
+    setEditedTitle(note.title);
+    setEditedContent(note.content);
+    setEditedTags(note.tags ? note.tags.map((tag) => tag.name).join(", ") : "");
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTitle = e.target.value;
+    setEditedTitle(newTitle);
+    updateEditedContent({
+      title: newTitle,
+      content: editedContent,
+      tags: editedTags,
+    });
+  };
+
+  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newContent = e.target.value;
+    setEditedContent(newContent);
+    updateEditedContent({
+      title: editedTitle,
+      content: newContent,
+      tags: editedTags,
+    });
+  };
+
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newTags = e.target.value;
+    setEditedTags(newTags);
+    updateEditedContent({
+      title: editedTitle,
+      content: editedContent,
+      tags: newTags,
+    });
   };
 
   const handleSaveEdit = async () => {
@@ -110,6 +161,7 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
 
       toast.success("Note updated successfully");
       setIsEditing(false);
+      clearEditedContent();
     } catch (error) {
       console.error("Failed to update note:", error);
       toast.error("Failed to update note. Please try again.");
@@ -124,7 +176,7 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
         <input
           type="text"
           value={editedTitle}
-          onChange={(e) => setEditedTitle(e.target.value)}
+          onChange={handleTitleChange}
           className="text-2xl font-bold focus:outline-none w-full"
           placeholder="Enter a title..."
         />
@@ -138,7 +190,7 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
             <input
               type="text"
               value={editedTags}
-              onChange={(e) => setEditedTags(e.target.value)}
+              onChange={handleTagsChange}
               placeholder="Add tags separated by commas (e.g. Work, Planning)"
               className="text-sm w-full px-2 py-0.5 focus:outline-border rounded-md"
             />
@@ -156,7 +208,7 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
 
         <textarea
           value={editedContent}
-          onChange={(e) => setEditedContent(e.target.value)}
+          onChange={handleContentChange}
           placeholder="Start typing your note here..."
           className="w-full h-full focus:outline-none resize-none text-sm"
         />
