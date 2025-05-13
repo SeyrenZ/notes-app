@@ -140,16 +140,16 @@ export default function RegisterForm() {
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full max-w-[540px] p-12 shadow-none">
-        <CardHeader className="flex flex-col items-center pb-4">
+        <CardHeader className="flex flex-col items-center pb-4 px-0">
           <Logo className="w-[96px] h-[28px]]" />
           <h2 className="mt-4 text-2xl font-bold tracking-tight text-center">
             Create an account
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
-            Enter your information to get started
+            Sign up to start organizing your notes and boost your productivity.
           </p>
         </CardHeader>
-        <CardContent>
+        <CardContent className="px-0">
           {displayError && (
             <Alert variant="destructive" className="mb-4">
               <AlertDescription>{displayError}</AlertDescription>
