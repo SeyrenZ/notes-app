@@ -6,8 +6,8 @@ import { Providers } from "./providers";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Registration Web App",
-  description: "A modern registration web application",
+  title: "Notes App",
+  description: "A modern notes web application",
 };
 
 export default function RootLayout({
