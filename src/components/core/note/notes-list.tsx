@@ -11,12 +11,13 @@ interface NotesListProps {
   onCreateNote: () => void;
 }
 
-const EmptyNoteList = () => {
+const EmptyNoteList = ({ isArchived }: { isArchived: boolean }) => {
   return (
     <div className="w-full h-fit flex items-center justify-center bg-accent rounded-md border border-border">
       <div className="text-sm px-4 py-2">
-        You don't have any notes yet. Start a new note to capture your thoughts
-        and ideas.
+        {isArchived
+          ? "You don't have any archived notes."
+          : "You don't have any notes yet. Start a new note to capture your thoughts and ideas."}
       </div>
     </div>
   );
@@ -24,38 +25,49 @@ const EmptyNoteList = () => {
 
 const NotesList: React.FC<NotesListProps> = ({ onCreateNote }) => {
   const { data: session } = useSession();
-  const { notes, fetchNotes, isLoading, error, selectNote } = useNotesStore();
+  const { notes, fetchNotes, isLoading, error, selectNote, showArchived } =
+    useNotesStore();
 
   useEffect(() => {
     if (session?.accessToken) {
       fetchNotes(session.accessToken);
     }
-  }, [session, fetchNotes]);
+  }, [session, fetchNotes, showArchived]); // Refetch when showArchived changes
 
   const handleNoteClick = (note: Note) => {
     selectNote(note);
   };
 
   return (
-    <div className="w-full max-w-[25%] min-w-[290px] pl-8 pr-4 py-5 h-full border-r border-border flex flex-col gap-4">
-      <Button
-        className="w-full items-center gap-2 h-[41px]"
-        onClick={onCreateNote}
-      >
-        <PlusIcon className="w-4 h-4" />
-        <div>Create New Note</div>
-      </Button>
-
-      {isLoading && <div className="text-sm text-center">Loading notes...</div>}
+    <div className="w-full max-w-[25%] min-w-[290px]  py-5 h-full border-r border-border flex flex-col">
+      <div className="px-4">
+        <Button
+          className="w-full items-center gap-2 h-[41px]"
+          onClick={onCreateNote}
+        >
+          <PlusIcon className="w-4 h-4" />
+          <div>Create New Note</div>
+        </Button>
+        {showArchived && (
+          <div className="text-sm text-muted-foreground mt-4">
+            All your archived notes are stored here. You can restore or delete
+            them anytime.
+          </div>
+        )}
+      </div>
 
       {error && (
         <div className="text-sm text-destructive text-center">{error}</div>
       )}
 
-      {!isLoading && !error && notes.length === 0 && <EmptyNoteList />}
+      <div className="px-4">
+        {!isLoading && !error && notes.length === 0 && (
+          <EmptyNoteList isArchived={showArchived} />
+        )}
+      </div>
 
       {!isLoading && !error && notes.length > 0 && (
-        <ScrollArea className="flex flex-col gap-2 overflow-hidden">
+        <ScrollArea className="flex flex-col overflow-hidden px-4">
           {notes.map((note) => (
             <NoteCard
               key={note.id}

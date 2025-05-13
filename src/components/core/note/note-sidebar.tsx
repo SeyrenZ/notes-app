@@ -1,7 +1,12 @@
 import React, { useState } from "react";
 import { Note } from "@/types/note";
 import { Button } from "@/components/ui/button";
-import { Edit2Icon, Trash2Icon } from "lucide-react";
+import {
+  Edit2Icon,
+  Trash2Icon,
+  ArchiveIcon,
+  ArchiveRestoreIcon,
+} from "lucide-react";
 import { useNotesStore } from "@/store/notes-store";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
@@ -13,8 +18,19 @@ interface NoteSidebarProps {
 
 const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
   const { data: session } = useSession();
-  const { deleteNote, selectNote, setIsEditing, isEditing } = useNotesStore();
+  const {
+    deleteNote,
+    selectNote,
+    setIsEditing,
+    isEditing,
+    archiveNote,
+    unarchiveNote,
+    showArchived,
+  } = useNotesStore();
+
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
+
   const formattedDate = formatDistanceToNow(new Date(note.updated_at), {
     addSuffix: true,
   });
@@ -42,6 +58,30 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
     setIsEditing(true);
   };
 
+  const handleArchiveToggle = async () => {
+    if (!session?.accessToken) {
+      toast.error("You must be logged in to archive notes");
+      return;
+    }
+
+    try {
+      setIsArchiving(true);
+
+      if (note.is_archived) {
+        await unarchiveNote(note.id, session.accessToken);
+        toast.success("Note unarchived successfully");
+      } else {
+        await archiveNote(note.id, session.accessToken);
+        toast.success("Note archived successfully");
+      }
+    } catch (error) {
+      console.error("Failed to archive/unarchive note:", error);
+      toast.error("Failed to change archive status. Please try again.");
+    } finally {
+      setIsArchiving(false);
+    }
+  };
+
   return (
     <div className="w-full max-w-[290px] border-l border-border px-4 py-5 h-full flex flex-col gap-4">
       <div className="text-lg font-semibold">Note Actions</div>
@@ -55,6 +95,26 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
           <Edit2Icon className="w-4 h-4" />
           <span>{isEditing ? "Currently Editing..." : "Edit Note"}</span>
         </Button>
+
+        <Button
+          variant="outline"
+          className="flex items-center gap-2 justify-start h-10"
+          onClick={handleArchiveToggle}
+          disabled={isArchiving || isEditing}
+        >
+          {note.is_archived ? (
+            <>
+              <ArchiveRestoreIcon className="w-4 h-4" />
+              <span>{isArchiving ? "Unarchiving..." : "Unarchive Note"}</span>
+            </>
+          ) : (
+            <>
+              <ArchiveIcon className="w-4 h-4" />
+              <span>{isArchiving ? "Archiving..." : "Archive Note"}</span>
+            </>
+          )}
+        </Button>
+
         <Button
           variant="outline"
           className="flex items-center gap-2 justify-start h-10 border-destructive text-destructive hover:bg-destructive/10"
@@ -76,6 +136,7 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
             })}
           </div>
           <div>Last Updated: {formattedDate}</div>
+          <div>Status: {note.is_archived ? "Archived" : "Active"}</div>
         </div>
       </div>
 

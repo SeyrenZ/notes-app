@@ -8,6 +8,7 @@ import {
   TrashIcon,
   SaveIcon,
   XIcon,
+  ArchiveIcon,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
@@ -201,6 +202,15 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
             )}
           </div>
         </div>
+        {note.is_archived && (
+          <div className="w-full flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full max-w-[115px]">
+              <ArchiveIcon className="w-4 h-4 text-muted-foreground" />
+              <div className="text-sm text-muted-foreground">Status</div>
+            </div>
+            <div className="text-sm text-muted-foreground">Archived</div>
+          </div>
+        )}
         <div className="w-full flex items-center gap-2">
           <div className="flex items-center gap-2 w-full max-w-[115px]">
             <ClockIcon className="w-4 h-4 text-muted-foreground" />

@@ -8,6 +8,7 @@ interface NotesState {
   error: string | null;
   selectedNote: Note | null;
   isEditing: boolean;
+  showArchived: boolean;
 
   // Actions
   fetchNotes: (token: string) => Promise<void>;
@@ -26,6 +27,9 @@ interface NotesState {
     token: string
   ) => Promise<Note>;
   setIsEditing: (isEditing: boolean) => void;
+  archiveNote: (id: number, token: string) => Promise<Note>;
+  unarchiveNote: (id: number, token: string) => Promise<Note>;
+  setShowArchived: (showArchived: boolean) => void;
 }
 
 export const useNotesStore = create<NotesState>((set, get) => ({
@@ -34,11 +38,12 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   error: null,
   selectedNote: null,
   isEditing: false,
+  showArchived: false,
 
   fetchNotes: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
-      const notes = await noteService.getNotes(token);
+      const notes = await noteService.getNotes(token, get().showArchived);
       set({ notes, isLoading: false });
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -153,5 +158,87 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   setIsEditing: (isEditing: boolean) => {
     set({ isEditing });
+  },
+
+  archiveNote: async (id: number, token: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedNote = await noteService.updateNote(
+        id,
+        { is_archived: true },
+        token
+      );
+
+      // If we're not viewing archived notes, remove from the list
+      set((state) => ({
+        notes: state.showArchived
+          ? state.notes.map((n) => (n.id === id ? updatedNote : n))
+          : state.notes.filter((n) => n.id !== id),
+        isLoading: false,
+        selectedNote: state.showArchived
+          ? state.selectedNote?.id === id
+            ? updatedNote
+            : state.selectedNote
+          : state.selectedNote?.id === id
+          ? null
+          : state.selectedNote,
+      }));
+
+      return updatedNote;
+    } catch (error) {
+      console.error("Error archiving note:", error);
+      set({
+        error:
+          error instanceof Error ? error.message : "Failed to archive note",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  unarchiveNote: async (id: number, token: string) => {
+    set({ isLoading: true, error: null });
+    try {
+      const updatedNote = await noteService.updateNote(
+        id,
+        { is_archived: false },
+        token
+      );
+
+      // If we're viewing archived notes, remove from the list
+      set((state) => ({
+        notes: state.showArchived
+          ? state.notes.filter((n) => n.id !== id)
+          : state.notes.map((n) => (n.id === id ? updatedNote : n)),
+        isLoading: false,
+        selectedNote: state.showArchived
+          ? state.selectedNote?.id === id
+            ? null
+            : state.selectedNote
+          : state.selectedNote?.id === id
+          ? updatedNote
+          : state.selectedNote,
+      }));
+
+      return updatedNote;
+    } catch (error) {
+      console.error("Error unarchiving note:", error);
+      set({
+        error:
+          error instanceof Error ? error.message : "Failed to unarchive note",
+        isLoading: false,
+      });
+      throw error;
+    }
+  },
+
+  setShowArchived: (showArchived: boolean) => {
+    set((state) => {
+      // If changing view mode, deselect any selected note
+      return {
+        showArchived,
+        selectedNote: null,
+      };
+    });
   },
 }));

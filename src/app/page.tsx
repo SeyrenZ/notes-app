@@ -16,7 +16,7 @@ import NoteSidebar from "@/components/core/note/note-sidebar";
 export default function Home() {
   const { data: session, status } = useSession();
   const [isCreatingNote, setIsCreatingNote] = useState(false);
-  const { selectedNote } = useNotesStore();
+  const { selectedNote, showArchived, fetchNotes } = useNotesStore();
   const router = useRouter();
 
   // Redirect to login if not authenticated
@@ -32,6 +32,13 @@ export default function Home() {
       setIsCreatingNote(false);
     }
   }, [selectedNote]);
+
+  // Fetch notes when session is ready or archive status changes
+  useEffect(() => {
+    if (session?.accessToken) {
+      fetchNotes(session.accessToken);
+    }
+  }, [session, fetchNotes, showArchived]);
 
   if (status === "loading") {
     return (
@@ -61,15 +68,18 @@ export default function Home() {
               <div className="w-full flex items-center justify-center">
                 <div className="text-center max-w-md">
                   <h3 className="text-xl font-semibold mb-2">
-                    Welcome to Notes App
+                    {showArchived ? "Archived Notes" : "Welcome to Notes App"}
                   </h3>
                   <p className="text-muted-foreground mb-4">
-                    Select a note from the sidebar or create a new one to get
-                    started.
+                    {showArchived
+                      ? "Select an archived note from the sidebar to view it."
+                      : "Select a note from the sidebar or create a new one to get started."}
                   </p>
-                  <Button onClick={() => setIsCreatingNote(true)}>
-                    Create Your First Note
-                  </Button>
+                  {!showArchived && (
+                    <Button onClick={() => setIsCreatingNote(true)}>
+                      Create Your First Note
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
