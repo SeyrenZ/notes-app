@@ -21,7 +21,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 pb-2 hover:cursor-pointer pt-4 hover:bg-accent/50 transition-all duration-200 px-2 mt-1",
+        "flex flex-col gap-2 pb-2 hover:cursor-pointer pt-4 hover:bg-accent/50 transition-all duration-200 px-2 mt-1 max-w-[270px]",
         isSelected
           ? "bg-accent rounded-md"
           : "border-b border-border rounded-t-md"
@@ -31,7 +31,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
       <div className="text-[16px] leading-[120%] font-bold">
         {note.title || "Untitled Note"}
       </div>
-      <div className="text-xs text-muted-foreground line-clamp-3">
+      <div className="text-xs text-muted-foreground line-clamp-3 whitespace-pre-wrap">
         {note.content || "No content"}
       </div>
       {note.tags && note.tags.length > 0 && (
@@ -43,7 +43,7 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
           ))}
         </div>
       )}
-      <div className="text-sm text-muted-foreground">{formattedDate}</div>
+      <div className="text-xs text-muted-foreground">{formattedDate}</div>
     </div>
   );
 };

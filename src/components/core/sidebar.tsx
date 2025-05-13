@@ -5,6 +5,7 @@ import { ArchiveIcon, ChevronRight, HomeIcon, TagIcon } from "lucide-react";
 import { Separator } from "../ui/separator";
 import { useNotesStore } from "@/store/notes-store";
 import { cn } from "@/lib/utils";
+import TagsList from "./note/tags-list";
 
 interface MenuButtonProps {
   icon: React.ReactNode;
@@ -45,12 +46,11 @@ const MenuButton: React.FC<MenuButtonProps> = ({
 };
 
 const Sidebar = () => {
-  const { showArchived, setShowArchived, fetchNotes } = useNotesStore();
+  const { showArchived, setShowArchived, selectedTag } = useNotesStore();
 
   const handleToggleView = (archived: boolean) => {
     if (showArchived !== archived) {
       setShowArchived(archived);
-      // Note: fetchNotes needs to be called by the component with access to the token
     }
   };
 
@@ -67,27 +67,18 @@ const Sidebar = () => {
             icon={<HomeIcon className="w-4 h-4 group-hover:text-primary" />}
             label="All Notes"
             onClick={() => handleToggleView(false)}
-            isActive={!showArchived}
+            isActive={!showArchived && !selectedTag}
           />
           <MenuButton
             icon={<ArchiveIcon className="w-4 h-4 group-hover:text-primary" />}
             label="Archived Notes"
             onClick={() => handleToggleView(true)}
-            isActive={showArchived}
+            isActive={showArchived && !selectedTag}
           />
         </div>
         <div className="w-full h-[1px] bg-border my-1" />
         {/* Tags */}
-        <div className="flex flex-col gap-2">
-          {/* <div className="text-sm font-medium text-muted-foreground px-3">
-            Tags
-          </div>
-          <MenuButton
-            icon={<TagIcon className="w-4 h-4 group-hover:text-primary" />}
-            label="Tag 1"
-            onClick={() => {}}
-          /> */}
-        </div>
+        <TagsList />
       </div>
     </div>
   );

@@ -1,14 +1,17 @@
 import { create } from "zustand";
-import { Note, NoteCreate, NoteUpdate, TagCreate } from "@/types/note";
+import { Note, NoteCreate, NoteUpdate, TagCreate, Tag } from "@/types/note";
 import * as noteService from "@/services/note-service";
 
 interface NotesState {
   notes: Note[];
+  allNotes: Note[]; // Cache of all notes for filtering
   isLoading: boolean;
   error: string | null;
   selectedNote: Note | null;
   isEditing: boolean;
   showArchived: boolean;
+  selectedTag: Tag | null;
+  allTags: Tag[]; // Unique tags from all notes
 
   // Actions
   fetchNotes: (token: string) => Promise<void>;
@@ -30,21 +33,45 @@ interface NotesState {
   archiveNote: (id: number, token: string) => Promise<Note>;
   unarchiveNote: (id: number, token: string) => Promise<Note>;
   setShowArchived: (showArchived: boolean) => void;
+  selectTag: (tag: Tag | null) => void;
+  extractAllTags: () => void;
 }
 
 export const useNotesStore = create<NotesState>((set, get) => ({
   notes: [],
+  allNotes: [],
   isLoading: false,
   error: null,
   selectedNote: null,
   isEditing: false,
   showArchived: false,
+  selectedTag: null,
+  allTags: [],
 
   fetchNotes: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
       const notes = await noteService.getNotes(token, get().showArchived);
-      set({ notes, isLoading: false });
+      set((state) => {
+        // Store all notes for filtering
+        const allNotes = [...notes];
+
+        // Apply tag filter if one is selected
+        const filteredNotes = state.selectedTag
+          ? notes.filter((note) =>
+              note.tags?.some((tag) => tag.id === state.selectedTag?.id)
+            )
+          : notes;
+
+        return {
+          notes: filteredNotes,
+          allNotes,
+          isLoading: false,
+        };
+      });
+
+      // Extract all unique tags from notes
+      get().extractAllTags();
     } catch (error) {
       console.error("Error fetching notes:", error);
       set({
@@ -58,11 +85,31 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const newNote = await noteService.createNote(note, token);
-      set((state) => ({
-        notes: [newNote, ...state.notes],
-        isLoading: false,
-        selectedNote: newNote,
-      }));
+      set((state) => {
+        // Add to all notes
+        const allNotes = [newNote, ...state.allNotes];
+
+        // Check if it should be in filtered notes
+        let updatedNotes = state.notes;
+        const matchesTagFilter =
+          !state.selectedTag ||
+          newNote.tags?.some((tag) => tag.id === state.selectedTag?.id);
+
+        if (matchesTagFilter) {
+          updatedNotes = [newNote, ...state.notes];
+        }
+
+        return {
+          notes: updatedNotes,
+          allNotes,
+          isLoading: false,
+          selectedNote: newNote,
+        };
+      });
+
+      // Update tags list
+      get().extractAllTags();
+
       return newNote;
     } catch (error) {
       console.error("Error creating note:", error);
@@ -78,12 +125,39 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const updatedNote = await noteService.updateNote(id, note, token);
-      set((state) => ({
-        notes: state.notes.map((n) => (n.id === id ? updatedNote : n)),
-        isLoading: false,
-        selectedNote:
-          state.selectedNote?.id === id ? updatedNote : state.selectedNote,
-      }));
+      set((state) => {
+        // Update in all notes
+        const allNotes = state.allNotes.map((n) =>
+          n.id === id ? updatedNote : n
+        );
+
+        // Check if it matches current filter
+        const matchesTagFilter =
+          !state.selectedTag ||
+          updatedNote.tags?.some((tag) => tag.id === state.selectedTag?.id);
+
+        // Update filtered notes accordingly
+        let updatedNotes;
+        if (matchesTagFilter) {
+          updatedNotes = state.notes.map((n) =>
+            n.id === id ? updatedNote : n
+          );
+        } else {
+          updatedNotes = state.notes.filter((n) => n.id !== id);
+        }
+
+        return {
+          notes: updatedNotes,
+          allNotes,
+          isLoading: false,
+          selectedNote:
+            state.selectedNote?.id === id ? updatedNote : state.selectedNote,
+        };
+      });
+
+      // Update tags list
+      get().extractAllTags();
+
       return updatedNote;
     } catch (error) {
       console.error("Error updating note:", error);
@@ -101,9 +175,13 @@ export const useNotesStore = create<NotesState>((set, get) => ({
       await noteService.deleteNote(id, token);
       set((state) => ({
         notes: state.notes.filter((n) => n.id !== id),
+        allNotes: state.allNotes.filter((n) => n.id !== id),
         isLoading: false,
         selectedNote: state.selectedNote?.id === id ? null : state.selectedNote,
       }));
+
+      // Update tags list
+      get().extractAllTags();
     } catch (error) {
       console.error("Error deleting note:", error);
       set({
@@ -122,12 +200,39 @@ export const useNotesStore = create<NotesState>((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const updatedNote = await noteService.addTagsToNote(id, tags, token);
-      set((state) => ({
-        notes: state.notes.map((n) => (n.id === id ? updatedNote : n)),
-        isLoading: false,
-        selectedNote:
-          state.selectedNote?.id === id ? updatedNote : state.selectedNote,
-      }));
+      set((state) => {
+        // Update in all notes
+        const allNotes = state.allNotes.map((n) =>
+          n.id === id ? updatedNote : n
+        );
+
+        // Check if it matches current filter
+        const matchesTagFilter =
+          !state.selectedTag ||
+          updatedNote.tags?.some((tag) => tag.id === state.selectedTag?.id);
+
+        // Update filtered notes accordingly
+        let updatedNotes;
+        if (matchesTagFilter) {
+          updatedNotes = state.notes.map((n) =>
+            n.id === id ? updatedNote : n
+          );
+        } else {
+          updatedNotes = state.notes.filter((n) => n.id !== id);
+        }
+
+        return {
+          notes: updatedNotes,
+          allNotes,
+          isLoading: false,
+          selectedNote:
+            state.selectedNote?.id === id ? updatedNote : state.selectedNote,
+        };
+      });
+
+      // Update tags list
+      get().extractAllTags();
+
       return updatedNote;
     } catch (error) {
       console.error("Error adding tags to note:", error);
@@ -169,20 +274,43 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         token
       );
 
-      // If we're not viewing archived notes, remove from the list
-      set((state) => ({
-        notes: state.showArchived
-          ? state.notes.map((n) => (n.id === id ? updatedNote : n))
-          : state.notes.filter((n) => n.id !== id),
-        isLoading: false,
-        selectedNote: state.showArchived
-          ? state.selectedNote?.id === id
-            ? updatedNote
-            : state.selectedNote
-          : state.selectedNote?.id === id
-          ? null
-          : state.selectedNote,
-      }));
+      set((state) => {
+        // Update in all notes
+        const allNotes = state.allNotes.map((n) =>
+          n.id === id ? updatedNote : n
+        );
+
+        // Remove from visible notes if we're not viewing archived
+        let updatedNotes = state.notes;
+        if (!state.showArchived) {
+          updatedNotes = state.notes.filter((n) => n.id !== id);
+        } else {
+          // If viewing archived, update if it matches tag filter
+          const matchesTagFilter =
+            !state.selectedTag ||
+            updatedNote.tags?.some((tag) => tag.id === state.selectedTag?.id);
+
+          if (matchesTagFilter) {
+            updatedNotes = state.notes.map((n) =>
+              n.id === id ? updatedNote : n
+            );
+          } else {
+            updatedNotes = state.notes.filter((n) => n.id !== id);
+          }
+        }
+
+        return {
+          notes: updatedNotes,
+          allNotes,
+          isLoading: false,
+          selectedNote:
+            state.selectedNote?.id === id
+              ? state.showArchived
+                ? updatedNote
+                : null
+              : state.selectedNote,
+        };
+      });
 
       return updatedNote;
     } catch (error) {
@@ -205,20 +333,43 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         token
       );
 
-      // If we're viewing archived notes, remove from the list
-      set((state) => ({
-        notes: state.showArchived
-          ? state.notes.filter((n) => n.id !== id)
-          : state.notes.map((n) => (n.id === id ? updatedNote : n)),
-        isLoading: false,
-        selectedNote: state.showArchived
-          ? state.selectedNote?.id === id
-            ? null
-            : state.selectedNote
-          : state.selectedNote?.id === id
-          ? updatedNote
-          : state.selectedNote,
-      }));
+      set((state) => {
+        // Update in all notes
+        const allNotes = state.allNotes.map((n) =>
+          n.id === id ? updatedNote : n
+        );
+
+        // Remove from visible notes if we're viewing archived
+        let updatedNotes = state.notes;
+        if (state.showArchived) {
+          updatedNotes = state.notes.filter((n) => n.id !== id);
+        } else {
+          // If viewing regular notes, update if it matches tag filter
+          const matchesTagFilter =
+            !state.selectedTag ||
+            updatedNote.tags?.some((tag) => tag.id === state.selectedTag?.id);
+
+          if (matchesTagFilter) {
+            updatedNotes = state.notes.map((n) =>
+              n.id === id ? updatedNote : n
+            );
+          } else {
+            updatedNotes = state.notes.filter((n) => n.id !== id);
+          }
+        }
+
+        return {
+          notes: updatedNotes,
+          allNotes,
+          isLoading: false,
+          selectedNote:
+            state.selectedNote?.id === id
+              ? !state.showArchived
+                ? updatedNote
+                : null
+              : state.selectedNote,
+        };
+      });
 
       return updatedNote;
     } catch (error) {
@@ -234,11 +385,62 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
   setShowArchived: (showArchived: boolean) => {
     set((state) => {
-      // If changing view mode, deselect any selected note
+      // If changing view mode, deselect any selected note and tag
       return {
         showArchived,
         selectedNote: null,
+        selectedTag: null,
       };
     });
+  },
+
+  selectTag: (tag: Tag | null) => {
+    const { showArchived, allNotes } = get();
+
+    set((state) => {
+      if (!tag) {
+        // If tag is null, show all notes based on archive status
+        return {
+          selectedTag: null,
+          notes: allNotes.filter((note) => note.is_archived === showArchived),
+          selectedNote: null,
+        };
+      }
+
+      // Filter notes by tag and archive status
+      const filteredNotes = allNotes.filter(
+        (note) =>
+          note.is_archived === showArchived &&
+          note.tags?.some((noteTag) => noteTag.id === tag.id)
+      );
+
+      return {
+        selectedTag: tag,
+        notes: filteredNotes,
+        selectedNote: null,
+      };
+    });
+  },
+
+  extractAllTags: () => {
+    const { allNotes } = get();
+
+    // Collect all tags from all notes
+    const tagsMap = new Map<number, Tag>();
+
+    allNotes.forEach((note) => {
+      note.tags?.forEach((tag) => {
+        if (!tagsMap.has(tag.id)) {
+          tagsMap.set(tag.id, tag);
+        }
+      });
+    });
+
+    // Convert map to array and sort by name
+    const allTags = Array.from(tagsMap.values()).sort((a, b) =>
+      a.name.localeCompare(b.name)
+    );
+
+    set({ allTags });
   },
 }));

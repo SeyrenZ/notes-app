@@ -1,4 +1,5 @@
 import { Note, NoteCreate, NoteUpdate, TagCreate } from "@/types/note";
+import { handleAuthError } from "@/lib/auth-utils";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -14,6 +15,11 @@ export async function createNote(
     },
     body: JSON.stringify(note),
   });
+
+  if (response.status === 401) {
+    handleAuthError();
+    throw new Error("Authentication failed");
+  }
 
   if (!response.ok) {
     const error = await response.json();
@@ -37,6 +43,11 @@ export async function updateNote(
     body: JSON.stringify(note),
   });
 
+  if (response.status === 401) {
+    handleAuthError();
+    throw new Error("Authentication failed");
+  }
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || "Failed to update note");
@@ -55,6 +66,11 @@ export async function getNotes(
     },
   });
 
+  if (response.status === 401) {
+    handleAuthError();
+    throw new Error("Authentication failed");
+  }
+
   if (!response.ok) {
     const error = await response.json();
     throw new Error(error.detail || "Failed to fetch notes");
@@ -69,6 +85,11 @@ export async function getNote(id: number, token: string): Promise<Note> {
       Authorization: `Bearer ${token}`,
     },
   });
+
+  if (response.status === 401) {
+    handleAuthError();
+    throw new Error("Authentication failed");
+  }
 
   if (!response.ok) {
     const error = await response.json();
@@ -85,6 +106,11 @@ export async function deleteNote(id: number, token: string): Promise<void> {
       Authorization: `Bearer ${token}`,
     },
   });
+
+  if (response.status === 401) {
+    handleAuthError();
+    throw new Error("Authentication failed");
+  }
 
   if (!response.ok) {
     const error = await response.json();
@@ -105,6 +131,11 @@ export async function addTagsToNote(
     },
     body: JSON.stringify(tags),
   });
+
+  if (response.status === 401) {
+    handleAuthError();
+    throw new Error("Authentication failed");
+  }
 
   if (!response.ok) {
     const error = await response.json();

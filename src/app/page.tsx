@@ -12,12 +12,14 @@ import { useNotesStore } from "@/store/notes-store";
 import NoteView from "@/components/core/note/note-view";
 import { useRouter } from "next/navigation";
 import NoteSidebar from "@/components/core/note/note-sidebar";
+import { isValidSession } from "@/lib/auth-utils";
 
 export default function Home() {
   const { data: session, status } = useSession();
   const [isCreatingNote, setIsCreatingNote] = useState(false);
   const { selectedNote, showArchived, fetchNotes } = useNotesStore();
   const router = useRouter();
+  const [isTokenChecked, setIsTokenChecked] = useState(false);
 
   // Redirect to login if not authenticated
   useEffect(() => {
@@ -25,6 +27,18 @@ export default function Home() {
       router.push("/login");
     }
   }, [status, router]);
+
+  // Check if session token is valid
+  useEffect(() => {
+    if (status === "authenticated") {
+      if (!isValidSession(session)) {
+        // If session exists but token is invalid or missing
+        signOut({ callbackUrl: "/login" });
+      } else {
+        setIsTokenChecked(true);
+      }
+    }
+  }, [session, status]);
 
   // Close create note when a note is selected
   useEffect(() => {
@@ -35,12 +49,17 @@ export default function Home() {
 
   // Fetch notes when session is ready or archive status changes
   useEffect(() => {
-    if (session?.accessToken) {
-      fetchNotes(session.accessToken);
+    if (isTokenChecked && session?.accessToken) {
+      fetchNotes(session.accessToken).catch((error) => {
+        console.error("Error fetching notes:", error);
+        if (error.message === "Authentication failed") {
+          // Will be handled by the API service
+        }
+      });
     }
-  }, [session, fetchNotes, showArchived]);
+  }, [session, fetchNotes, showArchived, isTokenChecked]);
 
-  if (status === "loading") {
+  if (status === "loading" || !isTokenChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
