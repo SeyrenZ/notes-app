@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -15,16 +15,14 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Eye, EyeOff } from "lucide-react";
+import Logo from "../icon/logo";
+import GoogleIcon from "../icon/google-icon";
+import { useAuthStore } from "@/store/auth-store";
+import { signIn } from "next-auth/react";
 
 const formSchema = z
   .object({
@@ -44,9 +42,16 @@ const formSchema = z
   });
 
 export default function RegisterForm() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Use the auth store
+  const { isLoading, error, handleGoogleSignIn } = useAuthStore();
+  const [localError, setLocalError] = useState<string | null>(null);
+
+  // Combine store error with local error
+  const displayError = error || localError;
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -59,8 +64,7 @@ export default function RegisterForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    setIsLoading(true);
-    setError(null);
+    setLocalError(null);
     try {
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/register`,
@@ -102,111 +106,189 @@ export default function RegisterForm() {
         }
       }
 
-      // Show success message and redirect to login
-      router.push("/login?registered=true");
+      // Auto-login the user after successful registration
+      try {
+        const loginResult = await signIn("credentials", {
+          email: values.email,
+          password: values.password,
+          redirect: false,
+          callbackUrl: "/",
+        });
+
+        if (loginResult?.error) {
+          // If auto-login fails, redirect to login page
+          router.push("/login?registered=true");
+          return;
+        }
+
+        // Redirect to home page on successful auto-login
+        window.location.href = "/";
+      } catch (loginError) {
+        // If auto-login throws an error, redirect to login page
+        router.push("/login?registered=true");
+      }
     } catch (error) {
       console.error("Registration error:", error);
-      setError(
+      setLocalError(
         error instanceof Error
           ? error.message
           : "An unexpected error occurred. Please try again."
       );
-    } finally {
-      setIsLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle>Create your account</CardTitle>
-          <CardDescription>
-            Enter your information to create an account
-          </CardDescription>
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <Card className="w-full max-w-[540px] p-12 shadow-none">
+        <CardHeader className="flex flex-col items-center pb-4">
+          <Logo className="w-[96px] h-[28px]]" />
+          <h2 className="mt-4 text-2xl font-bold tracking-tight text-center">
+            Create an account
+          </h2>
+          <p className="text-sm text-muted-foreground mt-1">
+            Enter your information to get started
+          </p>
         </CardHeader>
         <CardContent>
-          {error && (
+          {displayError && (
             <Alert variant="destructive" className="mb-4">
-              <AlertDescription>{error}</AlertDescription>
+              <AlertDescription>{displayError}</AlertDescription>
             </Alert>
           )}
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="username"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Username</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Choose a username" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Enter your email" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Enter your password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirm Password</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="password"
-                        placeholder="Confirm your password"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Choose a username" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="email@example.com" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Enter your password"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() => setShowPassword(!showPassword)}
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3"
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showConfirmPassword ? "text" : "password"}
+                            placeholder="Confirm your password"
+                            {...field}
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            onClick={() =>
+                              setShowConfirmPassword(!showConfirmPassword)
+                            }
+                            size="icon"
+                            className="absolute right-0 top-0 h-full px-3"
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+
               <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating account..." : "Create account"}
+                {isLoading ? "Creating account..." : "Sign Up"}
               </Button>
             </form>
           </Form>
-        </CardContent>
-        <CardFooter className="flex flex-col space-y-4">
-          <div className="text-sm text-center">
-            Already have an account?{" "}
-            <Link href="/login" className="text-blue-500 hover:underline">
-              Sign in here
-            </Link>
+
+          <div className="mt-2 text-center text-sm">
+            <div className="text-muted-foreground flex items-center justify-center gap-2">
+              <div className="w-full h-[1px] bg-border"></div>
+              <span className="text-nowrap">Or</span>
+              <div className="w-full h-[1px] bg-border"></div>
+            </div>
+
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full mt-2 flex items-center justify-center space-x-2"
+              onClick={() => handleGoogleSignIn("/register")}
+              disabled={isLoading}
+            >
+              <GoogleIcon className="w-10 h-10" />
+              <span>Google</span>
+            </Button>
           </div>
-        </CardFooter>
+
+          <div className="mt-6 text-center text-sm">
+            <p className="text-muted-foreground">
+              Already have an account?{" "}
+              <Link
+                href="/login"
+                className="text-primary font-semibold hover:underline"
+              >
+                Login
+              </Link>
+            </p>
+          </div>
+        </CardContent>
       </Card>
     </div>
   );
