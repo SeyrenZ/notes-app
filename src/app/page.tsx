@@ -13,6 +13,7 @@ import NoteView from "@/components/core/note/note-view";
 import { useRouter } from "next/navigation";
 import NoteSidebar from "@/components/core/note/note-sidebar";
 import { isValidSession } from "@/lib/auth-utils";
+import { Loader2 } from "lucide-react";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -62,8 +63,13 @@ export default function Home() {
   if (status === "loading" || !isTokenChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-4">Loading...</h2>
+        <div className="text-center space-y-2">
+          <div className="flex items-center justify-center">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-4">
+            Redirecting to dashboard...
+          </h2>
         </div>
       </div>
     );
@@ -83,30 +89,7 @@ export default function Home() {
             {!isCreatingNote && selectedNote && (
               <NoteView note={selectedNote} />
             )}
-            {!isCreatingNote && !selectedNote && (
-              <div className="w-full flex items-center justify-center">
-                <div className="text-center max-w-md">
-                  <h3 className="text-xl font-semibold mb-2">
-                    {showArchived ? "Archived Notes" : "Welcome to Notes App"}
-                  </h3>
-                  <p className="text-muted-foreground mb-4">
-                    {showArchived
-                      ? "Select an archived note from the sidebar to view it."
-                      : "Select a note from the sidebar or create a new one to get started."}
-                  </p>
-                  {!showArchived && (
-                    <Button onClick={() => setIsCreatingNote(true)}>
-                      Create Your First Note
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
-            {selectedNote ? (
-              <NoteSidebar note={selectedNote} />
-            ) : (
-              <div className="w-full max-w-[290px] border-l border-border px-4 py-5"></div>
-            )}
+            {selectedNote && <NoteSidebar note={selectedNote} />}
           </div>
         </div>
       </div>
