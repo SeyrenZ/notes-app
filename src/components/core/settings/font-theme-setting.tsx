@@ -73,9 +73,9 @@ const FontThemeSetting = () => {
   return (
     <div className="w-full max-w-[625px] flex flex-col p-6">
       <div className="space-y-2 mb-6">
-        <div className="text-[16px] leading-[120%] font-bold">Font</div>
+        <div className="text-[16px] leading-[120%] font-bold">Font Theme</div>
         <div className="text-sm text-muted-foreground">
-          Choose your preferred font family:
+          Choose your preferred font theme:
         </div>
       </div>
 

@@ -78,7 +78,9 @@ const SettingsList: React.FC<SettingsListProps> = ({
           icon={<SunIcon className="w-4 h-4" />}
           title="Color Theme"
           onClick={() => handleSelectSetting("color-theme")}
-          isActive={selectedSetting === "color-theme"}
+          isActive={
+            selectedSetting === "color-theme" || selectedSetting === null
+          }
         />
         <SettingsMenuItem
           icon={<TypeIcon className="w-4 h-4" />}

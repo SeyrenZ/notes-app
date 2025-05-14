@@ -119,11 +119,7 @@ export default function Home() {
           <div className="w-full flex-1 p-5">Change Password Settings</div>
         );
       default:
-        return (
-          <div className="w-full flex-1 flex items-center justify-center text-muted-foreground">
-            Select a setting from the left menu
-          </div>
-        );
+        return <ColorThemeSetting />;
     }
   };
 
