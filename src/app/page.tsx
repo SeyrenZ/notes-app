@@ -1,8 +1,6 @@
 "use client";
 
 import { useSession, signOut } from "next-auth/react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Sidebar from "@/components/core/sidebar";
 import Navbar from "@/components/core/navbar";
 import NotesList from "@/components/core/note/notes-list";
@@ -15,6 +13,7 @@ import NoteSidebar from "@/components/core/note/note-sidebar";
 import { isValidSession } from "@/lib/auth-utils";
 import { Loader2 } from "lucide-react";
 import { Note } from "@/types/note";
+import SettingsList from "@/components/core/settings/settings-list";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -22,6 +21,7 @@ export default function Home() {
   const [draftNote, setDraftNote] = useState<Partial<Note> | undefined>(
     undefined
   );
+  const [showSettings, setShowSettings] = useState(false);
   const { selectedNote, showArchived, fetchNotes } = useNotesStore();
   const router = useRouter();
   const [isTokenChecked, setIsTokenChecked] = useState(false);
@@ -50,6 +50,7 @@ export default function Home() {
     if (selectedNote) {
       setIsCreatingNote(false);
       setDraftNote(undefined);
+      setShowSettings(false);
     }
   }, [selectedNote]);
 
@@ -67,6 +68,7 @@ export default function Home() {
 
   const handleCreateNoteClick = () => {
     setIsCreatingNote(true);
+    setShowSettings(false);
     if (!draftNote) {
       setDraftNote({
         title: "Untitled Note",
@@ -86,6 +88,13 @@ export default function Home() {
     setDraftNote(undefined);
   };
 
+  const handleToggleSettings = (show: boolean) => {
+    setShowSettings(show);
+    if (show) {
+      setIsCreatingNote(false);
+    }
+  };
+
   if (status === "loading" || !isTokenChecked) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -103,26 +112,38 @@ export default function Home() {
 
   return (
     <div className="min-h-screen flex">
-      <Sidebar />
+      <Sidebar
+        onSettingsClose={() => setShowSettings(false)}
+        showSettings={showSettings}
+      />
       <div className="flex-1 flex-col">
-        <Navbar />
+        <Navbar
+          onToggleSettings={handleToggleSettings}
+          showSettings={showSettings}
+        />
         <div className="flex-1">
           <div className="w-full h-[calc(100dvh-81px)] bg-background flex">
-            <NotesList
-              onCreateNote={handleCreateNoteClick}
-              draftNote={draftNote}
-              isCreatingNote={isCreatingNote}
-            />
-            {isCreatingNote && (
+            {showSettings ? (
+              <SettingsList />
+            ) : (
+              <NotesList
+                onCreateNote={handleCreateNoteClick}
+                draftNote={draftNote}
+                isCreatingNote={isCreatingNote}
+              />
+            )}
+            {isCreatingNote && !showSettings && (
               <CreateNewNote
                 onClose={handleCloseCreateNote}
                 onDraftChange={handleDraftChange}
               />
             )}
-            {!isCreatingNote && selectedNote && (
+            {!isCreatingNote && !showSettings && selectedNote && (
               <NoteView note={selectedNote} />
             )}
-            {selectedNote && <NoteSidebar note={selectedNote} />}
+            {selectedNote && !showSettings && (
+              <NoteSidebar note={selectedNote} />
+            )}
           </div>
         </div>
       </div>

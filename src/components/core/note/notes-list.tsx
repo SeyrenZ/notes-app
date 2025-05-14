@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useCallback } from "react";
 import { Button } from "../../ui/button";
 import { PlusIcon, TagIcon, X } from "lucide-react";
 import NoteCard from "./note-card";
@@ -77,9 +77,13 @@ const NotesList: React.FC<NotesListProps> = ({
     loadNotes();
   }, [session, fetchNotes, showArchived]);
 
-  const handleNoteClick = (note: Note) => {
-    selectNote(note);
-  };
+  // Wrap handleNoteClick in useCallback to prevent it from changing on every render
+  const handleNoteClick = useCallback(
+    (note: Note) => {
+      selectNote(note);
+    },
+    [selectNote]
+  );
 
   const handleClearTagFilter = () => {
     selectTag(null);

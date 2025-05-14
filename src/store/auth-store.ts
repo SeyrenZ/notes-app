@@ -11,7 +11,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   isLoading: false,
   error: null,
 
-  handleGoogleSignIn: async (callbackUrl = "/") => {
+  handleGoogleSignIn: async () => {
     set({ isLoading: true, error: null });
 
     try {

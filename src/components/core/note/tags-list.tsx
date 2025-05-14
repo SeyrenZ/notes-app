@@ -3,12 +3,16 @@ import { useNotesStore } from "@/store/notes-store";
 import { Tag } from "@/types/note";
 import { TagIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 interface TagItemProps {
   tag: Tag;
   isSelected: boolean;
   onClick: (tag: Tag) => void;
+}
+
+interface TagsListProps {
+  onTagClick?: () => void; // Optional prop for closing settings when a tag is clicked
+  showSettings?: boolean; // Add prop to know if settings are open
 }
 
 const TagItem: React.FC<TagItemProps> = ({ tag, isSelected, onClick }) => {
@@ -28,7 +32,10 @@ const TagItem: React.FC<TagItemProps> = ({ tag, isSelected, onClick }) => {
   );
 };
 
-const TagsList = () => {
+const TagsList: React.FC<TagsListProps> = ({
+  onTagClick,
+  showSettings = false, // Default to false if not provided
+}) => {
   const { allTags, selectedTag, selectTag, showArchived } = useNotesStore();
 
   const handleTagClick = (tag: Tag) => {
@@ -38,6 +45,11 @@ const TagsList = () => {
     } else {
       // Otherwise, select the clicked tag
       selectTag(tag);
+    }
+
+    // Call the callback if provided (for closing settings)
+    if (onTagClick) {
+      onTagClick();
     }
   };
 
@@ -66,7 +78,7 @@ const TagsList = () => {
         <TagItem
           key={tag.id}
           tag={tag}
-          isSelected={selectedTag?.id === tag.id}
+          isSelected={!showSettings && selectedTag?.id === tag.id}
           onClick={handleTagClick}
         />
       ))}

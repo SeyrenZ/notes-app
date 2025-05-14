@@ -1,15 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Note } from "@/types/note";
 import { Badge } from "@/components/ui/badge";
-import {
-  TagIcon,
-  ClockIcon,
-  Edit2Icon,
-  TrashIcon,
-  SaveIcon,
-  XIcon,
-  ArchiveIcon,
-} from "lucide-react";
+import { TagIcon, ClockIcon, ArchiveIcon } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { useNotesStore } from "@/store/notes-store";
@@ -23,17 +15,12 @@ interface NoteViewProps {
 const NoteView: React.FC<NoteViewProps> = ({ note }) => {
   const { data: session } = useSession();
   const {
-    deleteNote,
-    selectNote,
-    updateNote,
     createAndProcessTags,
     isEditing,
     setIsEditing,
     updateEditedContent,
     clearEditedContent,
-    editedNoteContent,
   } = useNotesStore();
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editedTitle, setEditedTitle] = useState(note.title);
   const [editedContent, setEditedContent] = useState(note.content);
@@ -58,35 +45,6 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
   const formattedDate = formatDistanceToNow(new Date(note.updated_at), {
     addSuffix: true,
   });
-
-  const handleDelete = async () => {
-    if (!session?.accessToken) {
-      toast.error("You must be logged in to delete notes");
-      return;
-    }
-
-    try {
-      setIsDeleting(true);
-      await deleteNote(note.id, session.accessToken);
-      selectNote(null);
-      toast.success("Note deleted successfully");
-    } catch (error) {
-      console.error("Failed to delete note:", error);
-      toast.error("Failed to delete note. Please try again.");
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleEdit = () => {
-    setIsEditing(true);
-    // Initialize edited content in the store
-    updateEditedContent({
-      title: editedTitle,
-      content: editedContent,
-      tags: editedTags,
-    });
-  };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
@@ -142,14 +100,6 @@ const NoteView: React.FC<NoteViewProps> = ({ note }) => {
       setIsSaving(true);
 
       // Update note content
-      const updatedNote = await updateNote(
-        note.id,
-        {
-          title: editedTitle.trim(),
-          content: editedContent.trim(),
-        },
-        session.accessToken
-      );
 
       // Process tags if they've changed
       const currentTagsString = note.tags

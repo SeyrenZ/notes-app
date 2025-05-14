@@ -173,7 +173,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
 
       // If no valid cache, fetch from the server
       const notes = await noteService.getNotes(token, get().showArchived);
-      set((state) => {
+      set(() => {
         // Store all notes for filtering
         const allNotes = [...notes];
 

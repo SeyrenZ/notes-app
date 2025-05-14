@@ -1,8 +1,7 @@
 import React from "react";
 import Logo from "../icon/logo";
 import { Button } from "../ui/button";
-import { ArchiveIcon, ChevronRight, HomeIcon, TagIcon } from "lucide-react";
-import { Separator } from "../ui/separator";
+import { ArchiveIcon, ChevronRight, HomeIcon } from "lucide-react";
 import { useNotesStore } from "@/store/notes-store";
 import { cn } from "@/lib/utils";
 import TagsList from "./note/tags-list";
@@ -13,6 +12,11 @@ interface MenuButtonProps {
   onClick: () => void;
   isActive?: boolean;
   count?: number;
+}
+
+interface SidebarProps {
+  onSettingsClose: () => void;
+  showSettings?: boolean;
 }
 
 const MenuButton: React.FC<MenuButtonProps> = ({
@@ -52,11 +56,18 @@ const MenuButton: React.FC<MenuButtonProps> = ({
   );
 };
 
-const Sidebar = () => {
-  const { showArchived, setShowArchived, selectedTag, allNotes } =
+const Sidebar = ({ onSettingsClose, showSettings = false }: SidebarProps) => {
+  const { showArchived, setShowArchived, allNotes, selectTag } =
     useNotesStore();
 
   const handleToggleView = (archived: boolean) => {
+    // Always close settings when a sidebar button is clicked
+    onSettingsClose();
+
+    // Clear any selected tag
+    selectTag(null);
+
+    // Only toggle the archive view if it's different from current view
     if (showArchived !== archived) {
       setShowArchived(archived);
     }
@@ -79,20 +90,20 @@ const Sidebar = () => {
             icon={<HomeIcon className="w-4 h-4 group-hover:text-primary" />}
             label="All Notes"
             onClick={() => handleToggleView(false)}
-            isActive={!showArchived && !selectedTag}
+            isActive={!showSettings && !showArchived}
             count={activeNotesCount}
           />
           <MenuButton
             icon={<ArchiveIcon className="w-4 h-4 group-hover:text-primary" />}
             label="Archived Notes"
             onClick={() => handleToggleView(true)}
-            isActive={showArchived && !selectedTag}
+            isActive={!showSettings && showArchived}
             count={archivedNotesCount}
           />
         </div>
         <div className="w-full h-[1px] bg-border my-1" />
         {/* Tags */}
-        <TagsList />
+        <TagsList onTagClick={onSettingsClose} showSettings={showSettings} />
       </div>
     </div>
   );
