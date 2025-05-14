@@ -431,7 +431,19 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   },
 
   selectNote: (note: Note | null) => {
-    set({ selectedNote: note });
+    // Get current state to check if this is a different note
+    const { selectedNote, isEditing } = get();
+
+    // If we're editing and switching to a different note, cancel editing mode
+    if (isEditing && selectedNote && note && selectedNote.id !== note.id) {
+      set({
+        selectedNote: note,
+        isEditing: false,
+        editedNoteContent: null,
+      });
+    } else {
+      set({ selectedNote: note });
+    }
   },
 
   addTagsToNote: async (id: number, tags: TagCreate[], token: string) => {
