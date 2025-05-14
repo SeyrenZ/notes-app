@@ -3,27 +3,38 @@ import { Note, NoteCreate, NoteUpdate, TagCreate, Tag } from "@/types/note";
 import * as noteService from "@/services/note-service";
 
 // Helper functions for localStorage
-const LOCAL_STORAGE_KEY = "notes_app_cache";
+const LOCAL_STORAGE_KEY_BASE = "notes_app_cache";
+
+// Get user-specific localStorage key
+const getUserStorageKey = (userId?: string) => {
+  return userId
+    ? `${LOCAL_STORAGE_KEY_BASE}_${userId}`
+    : LOCAL_STORAGE_KEY_BASE;
+};
 
 const saveToLocalStorage = (data: {
   notes: Note[];
   allNotes: Note[];
   allTags: Tag[];
   timestamp: number;
+  userId?: string;
 }) => {
   if (typeof window !== "undefined") {
     try {
-      localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(data));
+      const { userId, ...storageData } = data;
+      const key = getUserStorageKey(userId);
+      localStorage.setItem(key, JSON.stringify(storageData));
     } catch (error) {
       console.error("Error saving to localStorage:", error);
     }
   }
 };
 
-const loadFromLocalStorage = () => {
+const loadFromLocalStorage = (userId?: string) => {
   if (typeof window !== "undefined") {
     try {
-      const cachedData = localStorage.getItem(LOCAL_STORAGE_KEY);
+      const key = getUserStorageKey(userId);
+      const cachedData = localStorage.getItem(key);
       if (cachedData) {
         return JSON.parse(cachedData);
       }
@@ -36,6 +47,20 @@ const loadFromLocalStorage = () => {
 
 // Cache expiration time (24 hours in milliseconds)
 const CACHE_EXPIRATION = 24 * 60 * 60 * 1000;
+
+// Helper function to extract user ID from JWT token
+const extractUserIdFromToken = (token: string): string | undefined => {
+  try {
+    const tokenParts = token.split(".");
+    if (tokenParts.length === 3) {
+      const payload = JSON.parse(atob(tokenParts[1]));
+      return payload.sub || payload.id || payload.user_id;
+    }
+  } catch (e) {
+    console.error("Could not extract user ID from token:", e);
+  }
+  return undefined;
+};
 
 // Check if the cache is valid (not expired)
 const isCacheValid = (timestamp: number) => {
@@ -149,8 +174,11 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   fetchNotes: async (token: string) => {
     set({ isLoading: true, error: null });
     try {
+      // Get user ID from token for caching
+      const userId = extractUserIdFromToken(token);
+
       // Try to load from cache first
-      const cachedData = loadFromLocalStorage();
+      const cachedData = loadFromLocalStorage(userId);
 
       // Check if we have valid cached data
       if (cachedData && isCacheValid(cachedData.timestamp)) {
@@ -183,6 +211,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           allNotes,
           allTags: [], // Will be populated by extractAllTags
           timestamp: Date.now(),
+          userId,
         });
 
         return {
@@ -203,6 +232,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         allNotes: currentState.allNotes,
         allTags: currentState.allTags,
         timestamp: Date.now(),
+        userId,
       });
     } catch (error) {
       console.error("Error fetching notes:", error);
@@ -216,6 +246,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   createNote: async (note: NoteCreate, token: string) => {
     set({ isLoading: true, error: null });
     try {
+      // Extract userId from token for caching
+      const userId = extractUserIdFromToken(token);
+
       const newNote = await noteService.createNote(note, token);
       set((state) => {
         // Add to all notes
@@ -244,6 +277,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           allNotes,
           allTags: state.allTags,
           timestamp: Date.now(),
+          userId,
         });
 
         return returnState;
@@ -259,6 +293,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         allNotes: currentState.allNotes,
         allTags: currentState.allTags,
         timestamp: Date.now(),
+        userId,
       });
 
       return newNote;
@@ -275,6 +310,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   updateNote: async (id: number, note: NoteUpdate, token: string) => {
     set({ isLoading: true, error: null });
     try {
+      // Extract userId from token for caching
+      const userId = extractUserIdFromToken(token);
+
       const updatedNote = await noteService.updateNote(id, note, token);
       set((state) => {
         // Update in all notes
@@ -311,6 +349,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           allNotes,
           allTags: state.allTags,
           timestamp: Date.now(),
+          userId,
         });
 
         return returnState;
@@ -326,6 +365,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         allNotes: currentState.allNotes,
         allTags: currentState.allTags,
         timestamp: Date.now(),
+        userId,
       });
 
       return updatedNote;
@@ -342,6 +382,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   deleteNote: async (id: number, token: string) => {
     set({ isLoading: true, error: null });
     try {
+      // Extract userId from token for caching
+      const userId = extractUserIdFromToken(token);
+
       await noteService.deleteNote(id, token);
       set((state) => {
         const updatedNotes = state.notes.filter((n) => n.id !== id);
@@ -353,6 +396,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           allNotes: updatedAllNotes,
           allTags: state.allTags,
           timestamp: Date.now(),
+          userId,
         });
 
         return {
@@ -374,6 +418,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
         allNotes: currentState.allNotes,
         allTags: currentState.allTags,
         timestamp: Date.now(),
+        userId,
       });
     } catch (error) {
       console.error("Error deleting note:", error);
@@ -473,6 +518,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   archiveNote: async (id: number, token: string) => {
     set({ isLoading: true, error: null });
     try {
+      // Extract userId from token for caching
+      const userId = extractUserIdFromToken(token);
+
       const updatedNote = await noteService.updateNote(
         id,
         { is_archived: true },
@@ -510,6 +558,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           allNotes,
           allTags: state.allTags,
           timestamp: Date.now(),
+          userId,
         });
 
         return {
@@ -540,6 +589,9 @@ export const useNotesStore = create<NotesState>((set, get) => ({
   unarchiveNote: async (id: number, token: string) => {
     set({ isLoading: true, error: null });
     try {
+      // Extract userId from token for caching
+      const userId = extractUserIdFromToken(token);
+
       const updatedNote = await noteService.updateNote(
         id,
         { is_archived: false },
@@ -577,6 +629,7 @@ export const useNotesStore = create<NotesState>((set, get) => ({
           allNotes,
           allTags: state.allTags,
           timestamp: Date.now(),
+          userId,
         });
 
         return {
