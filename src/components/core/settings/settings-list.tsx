@@ -7,9 +7,10 @@ import {
   SunIcon,
   TypeIcon,
 } from "lucide-react";
-import { signOut } from "next-auth/react";
-import React, { useState } from "react";
+import { signOut, useSession } from "next-auth/react";
+import React, { useState, useEffect } from "react";
 import LogoutDialog from "../note/dialog/logout-dialog";
+import { useUserStore } from "@/store/user-store";
 
 export type SettingType =
   | "color-theme"
@@ -60,6 +61,25 @@ const SettingsList: React.FC<SettingsListProps> = ({
   selectedSetting,
 }) => {
   const [isLogoutDialogOpen, setIsLogoutDialogOpen] = useState(false);
+  const { data: session } = useSession();
+  const { isOAuthUser, fetchUserInfo } = useUserStore();
+
+  useEffect(() => {
+    if (session?.accessToken) {
+      fetchUserInfo(session.accessToken);
+    }
+  }, [session, fetchUserInfo]);
+
+  // If user is OAuth user and has 'change-password' selected, switch to 'color-theme'
+  useEffect(() => {
+    if (
+      isOAuthUser &&
+      selectedSetting === "change-password" &&
+      onSelectSetting
+    ) {
+      onSelectSetting("color-theme");
+    }
+  }, [isOAuthUser, selectedSetting, onSelectSetting]);
 
   const handleLogout = () => {
     signOut();
@@ -88,12 +108,14 @@ const SettingsList: React.FC<SettingsListProps> = ({
           onClick={() => handleSelectSetting("font-theme")}
           isActive={selectedSetting === "font-theme"}
         />
-        <SettingsMenuItem
-          icon={<LockIcon className="w-4 h-4" />}
-          title="Change Password"
-          onClick={() => handleSelectSetting("change-password")}
-          isActive={selectedSetting === "change-password"}
-        />
+        {!isOAuthUser && (
+          <SettingsMenuItem
+            icon={<LockIcon className="w-4 h-4" />}
+            title="Change Password"
+            onClick={() => handleSelectSetting("change-password")}
+            isActive={selectedSetting === "change-password"}
+          />
+        )}
         <Separator />
         <SettingsMenuItem
           icon={<LogOutIcon className="w-4 h-4" />}

@@ -19,6 +19,7 @@ import SettingsList, {
 import ColorThemeSetting from "@/components/core/settings/color-theme-setting";
 import FontThemeSetting from "@/components/core/settings/font-theme-setting";
 import ChangePasswordSetting from "@/components/core/settings/change-password-setting";
+import { useUserStore } from "@/store/user-store";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -30,6 +31,7 @@ export default function Home() {
   const [selectedSetting, setSelectedSetting] =
     useState<SettingType>("color-theme");
   const { selectedNote, showArchived, fetchNotes } = useNotesStore();
+  const { fetchUserInfo } = useUserStore();
   const router = useRouter();
   const [isTokenChecked, setIsTokenChecked] = useState(false);
 
@@ -40,7 +42,7 @@ export default function Home() {
     }
   }, [status, router]);
 
-  // Check if session token is valid
+  // Check if session token is valid and fetch user information
   useEffect(() => {
     if (status === "authenticated") {
       if (!isValidSession(session)) {
@@ -48,9 +50,13 @@ export default function Home() {
         signOut({ callbackUrl: "/login" });
       } else {
         setIsTokenChecked(true);
+        // Fetch user information for settings
+        if (session?.accessToken) {
+          fetchUserInfo(session.accessToken);
+        }
       }
     }
-  }, [session, status]);
+  }, [session, status, fetchUserInfo]);
 
   // Close create note when a note is selected
   useEffect(() => {

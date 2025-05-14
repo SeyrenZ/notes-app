@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -18,6 +18,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { useUserStore } from "@/store/user-store";
 
 const formSchema = z
   .object({
@@ -43,6 +44,13 @@ const ChangePasswordSetting = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState("");
   const { data: session } = useSession();
+  const { isOAuthUser, fetchUserInfo } = useUserStore();
+
+  useEffect(() => {
+    if (session?.accessToken) {
+      fetchUserInfo(session.accessToken);
+    }
+  }, [session, fetchUserInfo]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -54,6 +62,13 @@ const ChangePasswordSetting = () => {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (isOAuthUser) {
+      toast.error(
+        "Password change is not available for accounts using Google login"
+      );
+      return;
+    }
+
     setIsLoading(true);
     setSuccess(false);
     setError("");
@@ -82,7 +97,6 @@ const ChangePasswordSetting = () => {
 
       if (!response.ok) {
         const errorData = await response.json();
-        // Handle specific error cases based on the API response
         if (response.status === 401) {
           setError(errorData.detail || "Incorrect current password");
           throw new Error(errorData.detail || "Incorrect current password");
@@ -95,7 +109,7 @@ const ChangePasswordSetting = () => {
         }
       }
 
-      await response.json(); // Read the response without storing it
+      await response.json();
       setSuccess(true);
       form.reset();
       toast.success("Password changed successfully!");
@@ -109,6 +123,28 @@ const ChangePasswordSetting = () => {
     } finally {
       setIsLoading(false);
     }
+  }
+
+  if (isOAuthUser) {
+    return (
+      <div className="w-full max-w-[625px] flex flex-col p-6 gap-6">
+        <div className="space-y-1">
+          <div className="text-[16px] leading-[120%] font-bold">
+            Change Password
+          </div>
+          <div className="text-sm text-muted-foreground">
+            Change your password to secure your account
+          </div>
+        </div>
+
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertDescription className="text-amber-800">
+            Password change is not available for accounts using Google login.
+            Your password is managed by Google and cannot be changed here.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
   }
 
   return (
