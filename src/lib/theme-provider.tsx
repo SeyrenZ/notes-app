@@ -87,7 +87,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
       try {
         const response = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/me`,
+          `${process.env.NEXT_PUBLIC_API_URL}/v1/users/me`,
           {
             headers: {
               Authorization: `Bearer ${session.accessToken}`,

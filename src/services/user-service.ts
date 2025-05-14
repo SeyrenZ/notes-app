@@ -22,7 +22,7 @@ export async function updateUserPreferences(
   preferences: UserPreferences,
   token: string
 ): Promise<UserResponse> {
-  const response = await fetch(`${API_URL}/v1/auth/me/preferences`, {
+  const response = await fetch(`${API_URL}/v1/users/me/preferences`, {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
