@@ -133,15 +133,25 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
 
       <div className="mt-4">
         <div className="text-sm font-medium mb-2">Note Information</div>
-        <div className="flex flex-col gap-1 text-sm text-muted-foreground">
+        <div className="flex flex-col gap-1 text-sm">
           <div>
             Created:{" "}
-            {formatDistanceToNow(new Date(note.created_at), {
-              addSuffix: true,
-            })}
+            <span className="text-muted-foreground">
+              {formatDistanceToNow(new Date(note.created_at), {
+                addSuffix: true,
+              })}
+            </span>
           </div>
-          <div>Last Updated: {formattedDate}</div>
-          <div>Status: {note.is_archived ? "Archived" : "Not Archived"}</div>
+          <div>
+            Last Updated:{" "}
+            <span className="text-muted-foreground">{formattedDate}</span>
+          </div>
+          <div>
+            Status:{" "}
+            <span className="text-muted-foreground">
+              {note.is_archived ? "Archived" : "Not Archived"}
+            </span>
+          </div>
         </div>
       </div>
 

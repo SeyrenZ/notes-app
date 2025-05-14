@@ -57,12 +57,12 @@ const NoteCard: React.FC<NoteCardProps> = ({ note, onClick }) => {
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 pb-2 border-b hover:cursor-pointer pt-4 hover:bg-accent/50 transition-all duration-200 px-2 mt-1 max-w-[270px]",
+        "flex flex-col gap-2 pb-2 border border-transparent hover:cursor-pointer pt-4 hover:bg-accent/50 transition-all duration-200 px-2 mt-1 max-w-[270px]",
         isBeingEdited
-          ? "bg-primary/5 border border-primary/20 rounded-md"
+          ? "bg-primary/5  border-primary/20 rounded-md"
           : isSelected
           ? "bg-accent rounded-md border-transparent"
-          : " border-border rounded-t-md"
+          : " border-b-border rounded-t-md"
       )}
       onClick={onClick}
     >
