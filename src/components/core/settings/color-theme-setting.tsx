@@ -27,19 +27,19 @@ const ColorThemeSetting = () => {
   const themeOptions: ThemeOptionItem[] = [
     {
       id: "light",
-      icon: SunIcon,
+      icon: <SunIcon className="w-5 h-5" />,
       title: "Light Mode",
       description: "Pick a clean and classic light theme",
     },
     {
       id: "dark",
-      icon: MoonIcon,
+      icon: <MoonIcon className="w-5 h-5" />,
       title: "Dark Mode",
       description: "Select a sleek and modern dark theme",
     },
     {
       id: "system",
-      icon: ComputerIcon,
+      icon: <ComputerIcon className="w-5 h-5" />,
       title: "System",
       description: "Adapts to your device's theme",
     },

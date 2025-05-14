@@ -2,8 +2,11 @@ import { handleAuthError } from "@/lib/auth-utils";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+export type FontTheme = "sans-serif" | "serif" | "monospace";
+
 interface UserPreferences {
   preferred_theme?: "light" | "dark" | "system";
+  preferred_font?: FontTheme;
 }
 
 interface UserResponse {
@@ -11,6 +14,7 @@ interface UserResponse {
   username: string;
   email: string;
   preferred_theme?: "light" | "dark" | "system";
+  preferred_font?: FontTheme;
   is_active: boolean;
   profile_picture?: string;
 }

@@ -1,11 +1,11 @@
 import React from "react";
-import { LucideIcon } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export type ThemeOption = "light" | "dark" | "system";
 
 export interface ThemeOptionItem {
   id: ThemeOption;
-  icon: LucideIcon;
+  icon: React.ReactNode;
   title: string;
   description: string;
 }
@@ -24,7 +24,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
   className = "",
 }) => {
   return (
-    <div className={`space-y-3 ${className}`}>
+    <div className={cn("space-y-3", className)}>
       {options.map((option) => (
         <div
           key={option.id}
@@ -34,7 +34,7 @@ const ThemeSelector: React.FC<ThemeSelectorProps> = ({
           onClick={() => onChange(option.id)}
         >
           <div className="bg-background border border-border rounded-md p-2 flex items-center justify-center">
-            <option.icon className="w-5 h-5" />
+            {option.icon}
           </div>
           <div className="ml-4 flex-1">
             <div className="font-medium">{option.title}</div>
