@@ -5,6 +5,8 @@ import { ArchiveIcon, ChevronRight, HomeIcon } from "lucide-react";
 import { useNotesStore } from "@/store/notes-store";
 import { cn } from "@/lib/utils";
 import TagsList from "./note/tags-list";
+import { useTheme } from "@/lib/theme-provider";
+import LogoWhiteText from "../icon/logo-white-text";
 
 interface MenuButtonProps {
   icon: React.ReactNode;
@@ -59,6 +61,7 @@ const MenuButton: React.FC<MenuButtonProps> = ({
 const Sidebar = ({ onSettingsClose, showSettings = false }: SidebarProps) => {
   const { showArchived, setShowArchived, allNotes, selectTag } =
     useNotesStore();
+  const { theme } = useTheme();
 
   const handleToggleView = (archived: boolean) => {
     // Always close settings when a sidebar button is clicked
@@ -78,11 +81,15 @@ const Sidebar = ({ onSettingsClose, showSettings = false }: SidebarProps) => {
   const archivedNotesCount = allNotes.filter((note) => note.is_archived).length;
 
   return (
-    <div className="w-[clamp(240px,20%,272px)] bg-background min-h-[100dvh] border-r border-border px-3 py-4">
+    <div className="w-[clamp(240px,20%,272px)] bg-background  [#min-h-[100dvh] border-r border-border px-3 py-4">
       <div className="flex flex-col gap-2">
         {/* Logo */}
         <div className="py-3">
-          <Logo className="w-[95px] h-[28px]" />
+          {theme === "dark" ? (
+            <LogoWhiteText className="w-[95px] h-[28px]" />
+          ) : (
+            <Logo className="w-[95px] h-[28px]" />
+          )}
         </div>
         {/* Menu */}
         <div className="flex flex-col gap-2">

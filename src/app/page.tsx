@@ -13,7 +13,10 @@ import NoteSidebar from "@/components/core/note/note-sidebar";
 import { isValidSession } from "@/lib/auth-utils";
 import { Loader2 } from "lucide-react";
 import { Note } from "@/types/note";
-import SettingsList from "@/components/core/settings/settings-list";
+import SettingsList, {
+  SettingType,
+} from "@/components/core/settings/settings-list";
+import ColorThemeSetting from "@/components/core/settings/color-theme-setting";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -22,6 +25,8 @@ export default function Home() {
     undefined
   );
   const [showSettings, setShowSettings] = useState(false);
+  const [selectedSetting, setSelectedSetting] =
+    useState<SettingType>("color-theme");
   const { selectedNote, showArchived, fetchNotes } = useNotesStore();
   const router = useRouter();
   const [isTokenChecked, setIsTokenChecked] = useState(false);
@@ -92,6 +97,32 @@ export default function Home() {
     setShowSettings(show);
     if (show) {
       setIsCreatingNote(false);
+    } else {
+      setSelectedSetting(null);
+    }
+  };
+
+  const handleSelectSetting = (setting: SettingType) => {
+    setSelectedSetting(setting);
+  };
+
+  // Render the appropriate settings content based on the selected setting
+  const renderSettingsContent = () => {
+    switch (selectedSetting) {
+      case "color-theme":
+        return <ColorThemeSetting />;
+      case "font-theme":
+        return <div className="w-full flex-1 p-5">Font Theme Settings</div>;
+      case "change-password":
+        return (
+          <div className="w-full flex-1 p-5">Change Password Settings</div>
+        );
+      default:
+        return (
+          <div className="w-full flex-1 flex items-center justify-center text-muted-foreground">
+            Select a setting from the left menu
+          </div>
+        );
     }
   };
 
@@ -124,7 +155,13 @@ export default function Home() {
         <div className="flex-1">
           <div className="w-full h-[calc(100dvh-81px)] bg-background flex">
             {showSettings ? (
-              <SettingsList />
+              <>
+                <SettingsList
+                  onSelectSetting={handleSelectSetting}
+                  selectedSetting={selectedSetting}
+                />
+                {renderSettingsContent()}
+              </>
             ) : (
               <NotesList
                 onCreateNote={handleCreateNoteClick}

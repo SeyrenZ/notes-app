@@ -3,6 +3,7 @@
 import { SessionProvider, signOut } from "next-auth/react";
 import { Toaster } from "sonner";
 import { useEffect } from "react";
+import { ThemeProvider } from "@/lib/theme-provider";
 
 // This component will be automatically mounted for all pages
 export function TokenExpirationManager() {
@@ -37,9 +38,11 @@ export function TokenExpirationManager() {
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <TokenExpirationManager />
-      <Toaster position="top-right" />
-      {children}
+      <ThemeProvider>
+        <TokenExpirationManager />
+        <Toaster position="top-right" />
+        {children}
+      </ThemeProvider>
     </SessionProvider>
   );
 }

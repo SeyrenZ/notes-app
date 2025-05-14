@@ -27,7 +27,6 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
     isEditing,
     archiveNote,
     unarchiveNote,
-    showArchived,
   } = useNotesStore();
 
   const [isDeleting, setIsDeleting] = useState(false);
@@ -123,7 +122,7 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
 
         <Button
           variant="outline"
-          className="flex items-center gap-2 justify-start h-10 border-destructive text-destructive hover:bg-destructive hover:text-background"
+          className="flex items-center gap-2 justify-start h-10 border-destructive text-destructive hover:bg-destructive hover:text-background dark:hover:bg-destructive dark:hover:text-foreground"
           onClick={() => setShowDeleteDialog(true)}
           disabled={isDeleting || isEditing}
         >
