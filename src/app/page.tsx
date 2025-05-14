@@ -18,6 +18,7 @@ import SettingsList, {
 } from "@/components/core/settings/settings-list";
 import ColorThemeSetting from "@/components/core/settings/color-theme-setting";
 import FontThemeSetting from "@/components/core/settings/font-theme-setting";
+import ChangePasswordSetting from "@/components/core/settings/change-password-setting";
 
 export default function Home() {
   const { data: session, status } = useSession();
@@ -115,9 +116,7 @@ export default function Home() {
       case "font-theme":
         return <FontThemeSetting />;
       case "change-password":
-        return (
-          <div className="w-full flex-1 p-5">Change Password Settings</div>
-        );
+        return <ChangePasswordSetting />;
       default:
         return <ColorThemeSetting />;
     }
