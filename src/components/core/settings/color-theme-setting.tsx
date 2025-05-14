@@ -58,14 +58,14 @@ const ColorThemeSetting = () => {
     try {
       setIsLoading(true);
 
-      // Update the theme in the database
+      // First update the local theme for instant feedback
+      setTheme(selectedTheme);
+
+      // Then update the theme in the database
       await updateUserPreferences(
         { preferred_theme: selectedTheme },
         session.accessToken
       );
-
-      // Update local theme using the context
-      setTheme(selectedTheme);
 
       toast.success(`Theme changed to ${selectedTheme} mode`);
     } catch (error) {
