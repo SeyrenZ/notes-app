@@ -23,6 +23,8 @@ import { Eye, EyeOff } from "lucide-react";
 import Logo from "../icon/logo";
 import GoogleIcon from "../icon/google-icon";
 import { useAuthStore } from "@/store/auth-store";
+import { useTheme } from "@/lib/theme-provider";
+import LogoWhiteText from "../icon/logo-white-text";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -82,12 +84,17 @@ export default function LoginForm() {
   }
 
   const [showPassword, setShowPassword] = useState(false);
+  const { theme } = useTheme();
 
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full sm:bg-background bg-transparent sm:max-w-[540px] lg:p-12 sm:p-8 p-4 shadow-none sm:border border-0">
         <CardHeader className="flex flex-col items-center pb-4 px-0">
-          <Logo className="w-[96px] h-[28px]]" />
+          {theme === "dark" ? (
+            <LogoWhiteText className="w-[96px] h-[28px]" />
+          ) : (
+            <Logo className="w-[96px] h-[28px]" />
+          )}
           <h2 className="mt-4 text-2xl font-bold tracking-tight text-center">
             Welcome to Note
           </h2>

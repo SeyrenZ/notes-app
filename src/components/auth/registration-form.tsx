@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
@@ -23,6 +23,8 @@ import Logo from "../icon/logo";
 import GoogleIcon from "../icon/google-icon";
 import { useAuthStore } from "@/store/auth-store";
 import { signIn } from "next-auth/react";
+import LogoWhiteText from "../icon/logo-white-text";
+import { useTheme } from "@/lib/theme-provider";
 
 const formSchema = z
   .object({
@@ -124,6 +126,7 @@ export default function RegisterForm() {
         // Redirect to home page on successful auto-login
         window.location.href = "/";
       } catch (loginError) {
+        console.error("Auto-login error:", loginError);
         // If auto-login throws an error, redirect to login page
         router.push("/login?registered=true");
       }
@@ -137,11 +140,17 @@ export default function RegisterForm() {
     }
   }
 
+  const { theme } = useTheme();
+
   return (
     <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <Card className="w-full sm:bg-background bg-transparent sm:max-w-[540px] lg:p-12 sm:p-8 p-4 shadow-none sm:border border-0">
         <CardHeader className="flex flex-col items-center pb-4 px-0">
-          <Logo className="w-[96px] h-[28px]]" />
+          {theme === "dark" ? (
+            <LogoWhiteText className="w-[96px] h-[28px]]" />
+          ) : (
+            <Logo className="w-[96px] h-[28px]]" />
+          )}
           <h2 className="mt-4 text-2xl font-bold tracking-tight text-center">
             Create an account
           </h2>
