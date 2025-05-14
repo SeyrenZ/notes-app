@@ -16,6 +16,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 const formSchema = z
   .object({
@@ -39,6 +41,8 @@ const ChangePasswordSetting = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const { data: session } = useSession();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -51,18 +55,24 @@ const ChangePasswordSetting = () => {
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsLoading(true);
-
     setSuccess(false);
+    setError("");
 
     try {
+      const token = session?.accessToken;
+
+      if (!token) {
+        throw new Error("You are not authenticated. Please log in again.");
+      }
+
       const response = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}/v1/auth/change-password`,
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
           },
-          credentials: "include", // Important to include cookies for authentication
           body: JSON.stringify({
             current_password: values.oldPassword,
             new_password: values.newPassword,
@@ -74,10 +84,13 @@ const ChangePasswordSetting = () => {
         const errorData = await response.json();
         // Handle specific error cases based on the API response
         if (response.status === 401) {
+          setError(errorData.detail || "Incorrect current password");
           throw new Error(errorData.detail || "Incorrect current password");
         } else if (response.status === 400) {
+          setError(errorData.detail || "Unable to change password");
           throw new Error(errorData.detail || "Unable to change password");
         } else {
+          setError("Failed to change password. Please try again later.");
           throw new Error("Failed to change password. Please try again later.");
         }
       }
@@ -85,8 +98,14 @@ const ChangePasswordSetting = () => {
       await response.json(); // Read the response without storing it
       setSuccess(true);
       form.reset();
+      toast.success("Password changed successfully!");
     } catch (error) {
       console.error("Error changing password:", error);
+      if (error instanceof Error) {
+        toast.error(error.message || "Error changing password");
+      } else {
+        toast.error("An unexpected error occurred");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -204,6 +223,14 @@ const ChangePasswordSetting = () => {
               )}
             />
           </div>
+
+          {error && (
+            <Alert className="bg-red-50 border-red-200 mb-4">
+              <AlertDescription className="text-red-800">
+                {error}
+              </AlertDescription>
+            </Alert>
+          )}
 
           {success && (
             <Alert className="bg-green-50 border-green-200 mb-4">

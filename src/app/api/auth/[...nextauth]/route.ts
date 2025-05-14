@@ -61,12 +61,18 @@ const handler = NextAuth({
             throw new Error("Invalid user data received from server");
           }
 
+          // Check explicitly for accessToken
+          if (!responseData.accessToken) {
+            console.error("No access token in response:", responseData);
+            throw new Error("No access token received from server");
+          }
+
           // Return the user object in the format NextAuth expects
           return {
             id: responseData.id,
             email: responseData.email,
             name: responseData.name || responseData.email,
-            accessToken: responseData.access_token,
+            accessToken: responseData.accessToken,
           };
         } catch (error) {
           console.error("Auth error:", error);
@@ -84,9 +90,14 @@ const handler = NextAuth({
   },
   callbacks: {
     async jwt({ token, user, account }) {
+      console.log("JWT Callback - Initial token:", token);
+      console.log("JWT Callback - User data:", user);
+      console.log("JWT Callback - Account data:", account);
+
       if (user) {
         token.id = user.id;
         token.accessToken = user.accessToken;
+        console.log("JWT Callback - Updated token:", token);
       }
 
       // For Google auth
@@ -123,9 +134,13 @@ const handler = NextAuth({
       return token;
     },
     async session({ session, token }) {
+      console.log("Session Callback - Initial session:", session);
+      console.log("Session Callback - Token data:", token);
+
       if (session.user) {
         session.user.id = token.id as string;
         session.accessToken = token.accessToken;
+        console.log("Session Callback - Updated session:", session);
       }
       return session;
     },

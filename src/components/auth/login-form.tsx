@@ -63,6 +63,8 @@ export default function LoginForm() {
     setLocalError(null);
 
     try {
+      console.log("Attempting to sign in with credentials:", values.email);
+
       const result = await signIn("credentials", {
         email: values.email,
         password: values.password,
@@ -70,13 +72,19 @@ export default function LoginForm() {
         callbackUrl: "/",
       });
 
+      console.log("Login result:", result);
+
       if (result?.error) {
+        console.error("Login error from NextAuth:", result.error);
         setLocalError("Invalid email or password");
         return;
       }
 
-      // Redirect to home page on successful login
-      window.location.href = "/";
+      // Log success and add a small delay to ensure session is updated
+      console.log("Login successful, redirecting...");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 500);
     } catch (error) {
       console.error("Login error:", error);
       setLocalError("An unexpected error occurred. Please try again.");

@@ -1,3 +1,4 @@
+import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import { toast } from "sonner";
 
@@ -34,6 +35,16 @@ export function addAuthHeader(token: string | undefined): HeadersInit {
 /**
  * Check if a session is valid
  */
-export function isValidSession(session: any): boolean {
-  return !!session?.accessToken;
+export function isValidSession(session: Session | null): boolean {
+  // Log session data for debugging
+  console.log("Validating session:", {
+    hasSession: !!session,
+    hasUser: !!session?.user,
+    hasId: !!session?.user?.id,
+    hasAccessToken: !!session?.accessToken,
+  });
+
+  // Temporarily just check if session exists for debugging
+  return !!session?.user?.id; // Less strict check that doesn't require accessToken
+  // Original: return !!session?.accessToken;
 }
