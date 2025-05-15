@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useNotesStore } from "@/store/notes-store";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { formatDistanceToNow } from "date-fns";
 import DeleteDialog from "./dialog/delete-dialog";
 import ArchiveDialog from "./dialog/archive-dialog";
@@ -48,7 +48,7 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
       setIsDeleting(true);
       await deleteNote(note.id, session.accessToken);
       selectNote(null);
-      toast.success("Note deleted successfully");
+      toast.deleteNote();
       setShowDeleteDialog(false);
     } catch (error) {
       console.error("Failed to delete note:", error);
@@ -73,10 +73,10 @@ const NoteSidebar: React.FC<NoteSidebarProps> = ({ note }) => {
 
       if (note.is_archived) {
         await unarchiveNote(note.id, session.accessToken);
-        toast.success("Note unarchived successfully");
+        toast.restoreNote();
       } else {
         await archiveNote(note.id, session.accessToken);
-        toast.success("Note archived successfully");
+        toast.archiveNote();
       }
       setShowArchiveDialog(false);
     } catch (error) {

@@ -1,9 +1,9 @@
-import { TagIcon, ClockIcon, X } from "lucide-react";
+import { TagIcon, ClockIcon } from "lucide-react";
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "../../ui/button";
 import { useSession } from "next-auth/react";
 import { useNotesStore } from "@/store/notes-store";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { Note, Tag } from "@/types/note";
 
 interface CreateNewNoteProps {
@@ -145,9 +145,11 @@ const CreateNewNote: React.FC<CreateNewNoteProps> = ({
         await createAndProcessTags(newNote.id, tags, session.accessToken);
       }
 
-      toast.success(
-        `Note ${showArchived ? "archived" : "created"} successfully`
-      );
+      if (showArchived) {
+        toast.archiveNote();
+      } else {
+        toast.saveNote();
+      }
       onClose();
     } catch (error) {
       console.error("Failed to save note:", error);

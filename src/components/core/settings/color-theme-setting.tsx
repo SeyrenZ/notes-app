@@ -6,7 +6,7 @@ import ThemeSelector, {
   ThemeOptionItem,
 } from "@/components/ui/theme-selector";
 import { useTheme } from "@/lib/theme-provider";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { useSession } from "next-auth/react";
 import { updateUserPreferences } from "@/services/user-service";
 
@@ -67,7 +67,7 @@ const ColorThemeSetting = () => {
         session.accessToken
       );
 
-      toast.success(`Theme changed to ${selectedTheme} mode`);
+      toast.updateSettings();
     } catch (error) {
       console.error("Failed to update theme preference:", error);
       toast.error("Failed to update theme preference. Please try again.");

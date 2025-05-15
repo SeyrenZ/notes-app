@@ -25,7 +25,7 @@ const LogoutDialog: React.FC<LogoutDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="p-0" closeButton={false}>
         <div className="flex items-start gap-4 px-5 pt-5">
-          <div className="flex items-center justify-center min-w-10 min-h-10 bg-accent rounded-md">
+          <div className="flex items-center justify-center min-w-10 min-h-10 bg-accent dark:bg-[#717784] rounded-md">
             <LogOutIcon className="w-6 h-6" />
           </div>
           <DialogHeader>
@@ -35,8 +35,12 @@ const LogoutDialog: React.FC<LogoutDialogProps> = ({
             </DialogDescription>
           </DialogHeader>
         </div>
-        <DialogFooter className="px-5 py-4 border-t border-border">
-          <Button variant="outline" onClick={onClose}>
+        <DialogFooter className="px-5 py-4 border-t border-border dark:border-[#525866]">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            className="dark:bg-[#717784]"
+          >
             Cancel
           </Button>
           <Button variant="destructive" onClick={onConfirm}>

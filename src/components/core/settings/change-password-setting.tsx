@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { useUserStore } from "@/store/user-store";
 
 const formSchema = z
@@ -112,7 +112,7 @@ const ChangePasswordSetting = () => {
       await response.json();
       setSuccess(true);
       form.reset();
-      toast.success("Password changed successfully!");
+      toast.changePassword();
     } catch (error) {
       console.error("Error changing password:", error);
       if (error instanceof Error) {

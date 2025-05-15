@@ -1,10 +1,10 @@
 "use client";
 
 import { SessionProvider, signOut } from "next-auth/react";
-import { Toaster } from "sonner";
 import { useEffect } from "react";
-import { ThemeProvider, useTheme } from "@/lib/theme-provider";
+import { ThemeProvider } from "@/lib/theme-provider";
 import { FontProvider } from "@/lib/font-provider";
+import { Toaster } from "@/components/ui/sonner";
 
 // This component will be automatically mounted for all pages
 export function TokenExpirationManager() {
@@ -38,8 +38,7 @@ export function TokenExpirationManager() {
 
 // This component is inside ThemeProvider so it can access theme
 function ToasterWithTheme() {
-  const { theme } = useTheme();
-  return <Toaster theme={theme} position="top-center" />;
+  return <Toaster position="top-center" />;
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {

@@ -27,7 +27,7 @@ const DeleteDialog: React.FC<DeleteDialogProps> = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="p-0" closeButton={false}>
         <div className="flex items-start gap-4 px-5 pt-5">
-          <div className="flex items-center justify-center min-w-10 min-h-10 bg-accent rounded-md">
+          <div className="flex items-center justify-center min-w-10 min-h-10 bg-accent dark:bg-[#717784] rounded-md">
             <Trash2Icon className="w-6 h-6" />
           </div>
           <DialogHeader>
@@ -38,8 +38,13 @@ const DeleteDialog: React.FC<DeleteDialogProps> = ({
             </DialogDescription>
           </DialogHeader>
         </div>
-        <DialogFooter className="px-5 py-4 border-t border-border">
-          <Button variant="outline" onClick={onClose} disabled={isDeleting}>
+        <DialogFooter className="px-5 py-4 border-t border-border dark:border-[#525866]">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="dark:bg-[#717784]"
+          >
             Cancel
           </Button>
           <Button

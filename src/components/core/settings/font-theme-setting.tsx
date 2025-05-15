@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useSession } from "next-auth/react";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 import { updateUserPreferences, FontTheme } from "@/services/user-service";
 import { useFont } from "@/lib/font-provider";
 import FontSelector, { FontOptionItem } from "@/components/ui/font-selector";
@@ -61,7 +61,7 @@ const FontThemeSetting = () => {
         session.accessToken
       );
 
-      toast.success(`Font changed to ${selectedFont}`);
+      toast.updateSettings();
     } catch (error) {
       console.error("Failed to update font preference:", error);
       toast.error("Failed to update font preference. Please try again.");
